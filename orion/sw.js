@@ -2,7 +2,7 @@
    - Pages de l'app : réseau d'abord, cache en secours (hors réseau)
    - Three.js et polices : cache d'abord, mise à jour en arrière-plan
    Les données ne passent jamais par ici : elles restent dans le stockage de l'appareil. */
-var VERSION = 'orion-v1';
+var VERSION = 'orion-v2';
 var CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/orion.svg', 'icons/orion-32.png', 'icons/orion-180.png', 'icons/orion-192.png', 'icons/orion-512.png'];
 var STATIC_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
