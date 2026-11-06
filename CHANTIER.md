@@ -1,4 +1,6 @@
-# Équilibre · BTP — Suivi de chantier TCE
+# Aequo — Suivi de chantier TCE
+
+*Aequo* vient du latin *aequus* : égal, plan, de niveau. C'est la racine du mot « équilibre », et le nom renvoie à la bulle centrée du niveau de l'icône.
 
 Application web en un seul fichier (`chantier.html`), sans serveur ni abonnement. Elle sert au suivi de chantiers tous corps d'état et se connecte à Outlook / Microsoft 365.
 
@@ -68,7 +70,7 @@ Elles s'exécutent à l'ouverture de l'application, puis toutes les 15 minutes t
 Dans l'onglet *Connexions*, renseignez une **URL de webhook** (Power Automate, Make, Zapier, n8n). Chaque événement y est envoyé en JSON :
 
 ```json
-{ "source": "equilibre-chantier", "event": "cr_diffuse", "date": "…", "data": { "chantier": "CH-2026-001", "numero": 4 } }
+{ "source": "aequo-chantier", "event": "cr_diffuse", "date": "…", "data": { "chantier": "CH-2026-001", "numero": 4 } }
 ```
 
 Événements disponibles : `rdv_cree`, `avancement`, `phase`, `tache_creee`, `tache_statut`, `cr_diffuse`, `reserve_levee`, `alerte_retard`, `email`, `test`.

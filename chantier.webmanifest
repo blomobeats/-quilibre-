@@ -1,6 +1,6 @@
 {
-  "name": "Équilibre · Suivi de chantier",
-  "short_name": "Chantiers",
+  "name": "Aequo · Suivi de chantier",
+  "short_name": "Aequo",
   "description": "Suivi de chantier tous corps d'état : lots, planning, CR, réserves, automatisations Outlook.",
   "lang": "fr",
   "start_url": "chantier.html",
@@ -10,8 +10,29 @@
   "background_color": "#10151f",
   "theme_color": "#10151f",
   "icons": [
-    { "src": "icons/chantier-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/chantier-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/chantier-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/chantier.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/chantier-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/chantier-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/chantier-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
