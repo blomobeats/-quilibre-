@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ÉQUILIBRE — Suivi de chantier</title>
 <meta name="theme-color" content="#10151f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chantiers">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="chantier.webmanifest">
+<link rel="apple-touch-icon" href="icons/chantier-180.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js" defer></script>
@@ -106,6 +110,17 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
 .toast.on{opacity:1;transform:none}
 .obs{background:var(--inp);border:1px solid var(--b);border-radius:var(--r);padding:10px;margin-bottom:8px}
 .mb{display:none}
+/* PHOTOS */
+.phs-w{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.ph-t{position:relative;width:76px;height:76px;border-radius:6px;overflow:hidden;background:var(--inp);border:1px solid var(--b);flex-shrink:0}
+.ph-t img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.ph-t button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:13px;line-height:22px}
+.ph-add{width:76px;height:76px;border:1px dashed var(--bhi);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--tx2);font-size:11px;gap:2px;flex-shrink:0}
+.ph-add:hover{border-color:var(--ac2);color:var(--ac2)}.ph-add b{font-size:22px}
+.ph-s{width:44px;height:44px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:120;display:none;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
+.lb.on{display:flex}.lb img{max-width:100%;max-height:100%;border-radius:6px}
+.off{color:var(--gd)}
 /* MOBILE */
 @media(max-width:820px){
  body{flex-direction:column}
@@ -113,7 +128,10 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
  .sbl,.sbs,.sbf{display:none}.sbn{display:flex;padding:0}
  .si{flex-direction:column;gap:2px;padding:8px 12px;font-size:10px;border-left:none;border-top:3px solid transparent}
  .si.on{border-top-color:var(--ac2)}
- .main{height:calc(100vh - 58px)}.topbar{padding:10px 16px}.cw{padding:16px 16px 40px}
+ .sb{padding-bottom:env(safe-area-inset-bottom)}
+ .main{height:calc(100vh - 58px - env(safe-area-inset-bottom))}.topbar{padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top))}.cw{padding:16px 16px 40px}
+ .md{padding:16px}.ov{padding:12px 8px}
+ .tbt{font-size:20px}.tbr .btn{padding:6px 10px;font-size:11px}.tab{padding:7px 9px;font-size:12px}
  .gtr{grid-template-columns:120px 1fr}
 }
 /* PRINT CR */
@@ -125,6 +143,7 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
  #printArea h1{font-size:16pt;margin-bottom:4px}#printArea h2{font-size:12pt;margin:14px 0 6px;border-bottom:1px solid #000;padding-bottom:2px}
  #printArea table{border-collapse:collapse;width:100%}#printArea td,#printArea th{border:1px solid #555;padding:4px 6px;font-size:9.5pt;color:#000;text-align:left}
  #printArea th{background:#eee}
+ #printArea img{max-width:160px;max-height:120px;margin:2px;border:1px solid #999}
 }
 </style>
 </head>
@@ -135,6 +154,7 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
  <div class="sbf">
   <div class="conn"><span class="dot" id="msDot"></span><span id="msLbl">Outlook non connecté</span></div>
   <div id="lastRun">Automatisations : —</div>
+  <div id="netSt"></div>
  </div>
 </aside>
 <div class="main">
@@ -144,6 +164,8 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
 <div class="toast" id="toast"></div>
 <div id="printArea"></div>
+<div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbImg" alt="Photo"></div>
+<input type="file" id="phInput" accept="image/*" capture="environment" multiple style="display:none">
 
 <script>
 'use strict';
@@ -208,7 +230,7 @@ function C(id){return DB.chantiers.find(function(c){return c.id===id;});}
 function lotOf(c,id){return c.lots.find(function(l){return l.id===id;});}
 function intOf(c,id){return c.intervenants.find(function(i){return i.id===id;});}
 function lotName(c,id){var l=lotOf(c,id);return l?l.code+' '+l.nom:'Général';}
-function openOv(html,lg){$('md').className='md'+(lg?' lg':'');$('md').innerHTML=html;$('ov').classList.add('on');}
+function openOv(html,lg){$('md').className='md'+(lg?' lg':'');$('md').innerHTML=html;$('ov').classList.add('on');fillPh($('md'));}
 function closeOv(){$('ov').classList.remove('on');}
 $('ov').addEventListener('mousedown',function(e){if(e.target===this)closeOv();});
 function journal(c,type,texte,source){c.journal.unshift({id:uid(),date:new Date().toISOString(),type:type,texte:texte,source:source||'manuel'});}
@@ -240,7 +262,7 @@ function renderNav(){
 }
 function go(p,ch,tab){S.page=p;if(ch!==undefined)S.ch=ch;if(tab)S.tab=tab;render();}
 function head(t,s,a){$('pgTitle').textContent=t;$('pgSub').textContent=s||'';$('pgActions').innerHTML=a||'';}
-function render(){renderNav();var f={dash:rDash,chantiers:rChantiers,chantier:rChantier,agenda:rAgenda,taches:rTaches,auto:rAuto,conn:rConn,param:rParam}[S.page]||rDash;f();$('view').scrollTop=0;}
+function render(){renderNav();var f={dash:rDash,chantiers:rChantiers,chantier:rChantier,agenda:rAgenda,taches:rTaches,auto:rAuto,conn:rConn,param:rParam}[S.page]||rDash;f();$('view').scrollTop=0;fillPh($('view'));}
 
 /* =========================================================
    TABLEAU DE BORD
@@ -310,10 +332,10 @@ function delChantier(id){if(!confirm('Supprimer définitivement ce chantier ?'))
 var TABS=[['synthese','Synthèse'],['lots','Lots & étapes'],['planning','Planning'],['taches','Tâches'],['reunions','Réunions & CR'],['reserves','Réserves'],['intervenants','Intervenants'],['journal','Journal']];
 function rChantier(){
  var c=C(S.ch);if(!c){go('chantiers');return;}
- head(c.nom,c.ref+' · '+(c.client||'')+' · '+(c.adresse||''),'<button class="btn btg" onclick="editChantier(\''+c.id+'\')">Modifier</button><button class="btn btb" onclick="editReunion(\''+c.id+'\')">+ RDV</button><button class="btn bta" onclick="editTache(\''+c.id+'\')">+ Tâche</button>');
+ head(c.nom,c.ref+' · '+(c.client||'')+' · '+(c.adresse||''),'<button class="btn btg" onclick="addNote(\''+c.id+'\')">📷 Note / photo</button><button class="btn btg" onclick="editChantier(\''+c.id+'\')">Modifier</button><button class="btn btb" onclick="editReunion(\''+c.id+'\')">+ RDV</button><button class="btn bta" onclick="editTache(\''+c.id+'\')">+ Tâche</button>');
  var h='<div class="tabs">'+TABS.map(function(t){return'<div class="tab'+(S.tab===t[0]?' on':'')+'" onclick="S.tab=\''+t[0]+'\';rChantier()">'+t[1]+'</div>';}).join('')+'</div>';
  h+=({synthese:tSynthese,lots:tLots,planning:tPlanning,taches:tTaches,reunions:tReunions,reserves:tReserves,intervenants:tIntervenants,journal:tJournal}[S.tab]||tSynthese)(c);
- $('view').innerHTML=h;
+ $('view').innerHTML=h;fillPh($('view'));
 }
 function tSynthese(c){
  var p=chPct(c),t=today(),nx=c.reunions.filter(function(r){return r.date>=t;}).sort(function(a,b){return a.date.localeCompare(b.date);})[0];
@@ -483,22 +505,22 @@ function crHTML(c,cr,mail){var P={P:'Présent',A:'Absent',E:'Excusé'},s='font-f
  h+='<h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Observations</h2><table style="'+tb+'"><tr><th style="'+td+'">Lot</th><th style="'+td+'">Observation</th><th style="'+td+'">Type</th><th style="'+td+'">Resp.</th><th style="'+td+'">Échéance</th><th style="'+td+'">État</th></tr>';
  Object.keys(grp).forEach(function(k){grp[k].forEach(function(o){var r=o.resp&&intOf(c,o.resp);h+='<tr><td style="'+td+'">'+esc(lotName(c,k))+'</td><td style="'+td+'">'+esc(o.texte).replace(/\n/g,'<br>')+(o.report?' <i>(reporté)</i>':'')+'</td><td style="'+td+'">'+esc({info:'Info',action:'Action',reserve:'Réserve',decision:'Décision'}[o.type])+'</td><td style="'+td+'">'+esc(r?r.nom:'')+'</td><td style="'+td+'">'+(o.ech?fr(o.ech):'')+'</td><td style="'+td+'">'+(o.type==='info'?'':o.solde?'Soldé':'En cours')+'</td></tr>';});});
  h+='</table><h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Avancement des lots</h2><table style="'+tb+'"><tr><th style="'+td+'">Lot</th><th style="'+td+'">Entreprise</th><th style="'+td+'">Avancement</th><th style="'+td+'">Prévu</th></tr>'+c.lots.map(function(l){var a=(cr.avancement||[]).find(function(x){return x.lotId===l.id;});var th=lotTheo(l);return'<tr><td style="'+td+'">'+l.code+' '+esc(l.nom)+'</td><td style="'+td+'">'+esc(l.entreprise||'')+'</td><td style="'+td+'">'+(a?a.pct:lotPct(l))+' %</td><td style="'+td+'">'+(th==null?'':th+' %')+'</td></tr>';}).join('')+'</table>';
- var rv=reservesOuvertes(c);if(rv.length)h+='<h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Réserves ouvertes ('+rv.length+')</h2><table style="'+tb+'">'+rv.map(function(r){return'<tr><td style="'+td+'">'+esc(lotName(c,r.lotId))+'</td><td style="'+td+'">'+esc(r.localisation)+' — '+esc(r.description)+'</td><td style="'+td+'">'+fr(r.echeance)+'</td></tr>';}).join('')+'</table>';
+ var rv=reservesOuvertes(c);if(rv.length)h+='<h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Réserves ouvertes ('+rv.length+')</h2><table style="'+tb+'">'+rv.map(function(r){return'<tr><td style="'+td+'">'+esc(lotName(c,r.lotId))+'</td><td style="'+td+'">'+esc(r.localisation)+' — '+esc(r.description)+(!mail&&(r.photos||[]).length?'<br>'+r.photos.slice(0,4).map(function(id){return'<img data-ph="'+id+'" alt="">';}).join(''):'')+'</td><td style="'+td+'">'+fr(r.echeance)+'</td></tr>';}).join('')+'</table>';
  h+='<p style="margin-top:14px"><b>Prochaine réunion : '+(cr.prochaine?frl(cr.prochaine)+' à '+esc(cr.prochaineH||''):'à définir')+'</b></p><p style="font-size:11px;color:#666">Sans observation écrite sous 8 jours, le présent compte rendu est réputé accepté.</p>'+(mail&&DB.settings.signature?'<p>'+esc(DB.settings.signature).replace(/\n/g,'<br>')+'</p>':'')+'</div>';return h;}
-function printCR(cid,crid){var c=C(cid),cr=c.crs.find(function(x){return x.id===crid;});$('printArea').innerHTML=crHTML(c,cr,false);window.print();}
+function printCR(cid,crid){var c=C(cid),cr=c.crs.find(function(x){return x.id===crid;});$('printArea').innerHTML=crHTML(c,cr,false);fillPh($('printArea')).then(function(){setTimeout(function(){window.print();},150);});}
 
 /* ---------- Réserves ---------- */
 function tReserves(c){var o=reservesOuvertes(c),t=today();
- return'<div class="card"><div class="ch"><div class="ct">Réserves ('+o.length+' ouvertes / '+c.reserves.length+')</div><button class="btn bta bts" onclick="editReserve(\''+c.id+'\')">+ Réserve</button></div><div class="tw"><table><tr><th>Lot</th><th>Localisation</th><th>Description</th><th>Constat</th><th>Échéance</th><th>État</th></tr>'+
- (c.reserves.length?c.reserves.slice().sort(function(a,b){return(a.statut==='levee')-(b.statut==='levee');}).map(function(r){return'<tr class="cl" onclick="editReserve(\''+c.id+'\',\''+r.id+'\')"><td>'+esc(lotName(c,r.lotId))+'</td><td>'+esc(r.localisation)+'</td><td>'+esc(r.description)+'</td><td class="mono">'+fr(r.constat)+'</td><td class="mono" style="'+(r.statut!=='levee'&&r.echeance<t?'color:var(--rd)':'')+'">'+fr(r.echeance)+'</td><td><span class="tag '+(r.statut==='levee'?'t-gr':'t-gd')+'">'+(r.statut==='levee'?'Levée':'Ouverte')+'</span></td></tr>';}).join(''):'<tr><td colspan="6" class="empty">Aucune réserve.</td></tr>')+'</table></div></div>';}
-function editReserve(cid,rid){var c=C(cid),r=rid?c.reserves.find(function(x){return x.id===rid;}):{lotId:'',localisation:'',description:'',constat:today(),echeance:addDays(today(),15),statut:'ouverte'};
- openOv('<div class="mdh"><div class="ct">Réserve</div><button class="x" onclick="closeOv()">×</button></div><div class="row"><div><label class="fl">Lot</label><select id="v_lot"><option value="">Général</option>'+opts(c.lots.map(function(l){return[l.id,l.code+' '+l.nom];}),r.lotId)+'</select></div><div><label class="fl">Localisation</label><input id="v_loc" value="'+esc(r.localisation)+'" placeholder="Bât A – R+1 – Logt 12"></div></div><label class="fl">Description</label><textarea id="v_desc" rows="3">'+esc(r.description)+'</textarea><div class="row"><div><label class="fl">Constat</label><input type="date" id="v_con" value="'+esc(r.constat)+'"></div><div><label class="fl">Échéance levée</label><input type="date" id="v_ech" value="'+esc(r.echeance)+'"></div><div><label class="fl">État</label><select id="v_st">'+opts([['ouverte','Ouverte'],['levee','Levée']],r.statut)+'</select></div></div><div class="mdf">'+(rid?'<button class="btn btr" onclick="delReserve(\''+cid+'\',\''+rid+'\')">Supprimer</button>':'')+'<button class="btn btg" onclick="closeOv()">Annuler</button><button class="btn bta" onclick="saveReserve(\''+cid+'\',\''+(rid||'')+'\')">Enregistrer</button></div>');}
+ return'<div class="card"><div class="ch"><div class="ct">Réserves ('+o.length+' ouvertes / '+c.reserves.length+')</div><button class="btn bta bts" onclick="editReserve(\''+c.id+'\')">+ Réserve</button></div><div class="tw"><table><tr><th>Lot</th><th>Localisation</th><th>Description</th><th>📷</th><th>Constat</th><th>Échéance</th><th>État</th></tr>'+
+ (c.reserves.length?c.reserves.slice().sort(function(a,b){return(a.statut==='levee')-(b.statut==='levee');}).map(function(r){return'<tr class="cl" onclick="editReserve(\''+c.id+'\',\''+r.id+'\')"><td>'+esc(lotName(c,r.lotId))+'</td><td>'+esc(r.localisation)+'</td><td>'+esc(r.description)+'</td><td>'+((r.photos||[]).length?'<div class="ph-t ph-s"><img data-ph="'+r.photos[0]+'" alt=""></div>'+(r.photos.length>1?'<span class="mono">+'+(r.photos.length-1)+'</span>':''):'')+'</td><td class="mono">'+fr(r.constat)+'</td><td class="mono" style="'+(r.statut!=='levee'&&r.echeance<t?'color:var(--rd)':'')+'">'+fr(r.echeance)+'</td><td><span class="tag '+(r.statut==='levee'?'t-gr':'t-gd')+'">'+(r.statut==='levee'?'Levée':'Ouverte')+'</span></td></tr>';}).join(''):'<tr><td colspan="7" class="empty">Aucune réserve.</td></tr>')+'</table></div></div>';}
+function editReserve(cid,rid){var c=C(cid),r=rid?c.reserves.find(function(x){return x.id===rid;}):{lotId:'',localisation:'',description:'',constat:today(),echeance:addDays(today(),15),statut:'ouverte'};PHT=(r.photos||[]).slice();
+ openOv('<div class="mdh"><div class="ct">Réserve</div><button class="x" onclick="closeOv()">×</button></div><div class="row"><div><label class="fl">Lot</label><select id="v_lot"><option value="">Général</option>'+opts(c.lots.map(function(l){return[l.id,l.code+' '+l.nom];}),r.lotId)+'</select></div><div><label class="fl">Localisation</label><input id="v_loc" value="'+esc(r.localisation)+'" placeholder="Bât A – R+1 – Logt 12"></div></div><label class="fl">Description</label><textarea id="v_desc" rows="3">'+esc(r.description)+'</textarea><div class="row"><div><label class="fl">Constat</label><input type="date" id="v_con" value="'+esc(r.constat)+'"></div><div><label class="fl">Échéance levée</label><input type="date" id="v_ech" value="'+esc(r.echeance)+'"></div><div><label class="fl">État</label><select id="v_st">'+opts([['ouverte','Ouverte'],['levee','Levée']],r.statut)+'</select></div></div><label class="fl">Photos</label>'+phEditor()+'<div class="mdf">'+(rid?'<button class="btn btr" onclick="delReserve(\''+cid+'\',\''+rid+'\')">Supprimer</button>':'')+'<button class="btn btg" onclick="closeOv()">Annuler</button><button class="btn bta" onclick="saveReserve(\''+cid+'\',\''+(rid||'')+'\')">Enregistrer</button></div>');}
 function saveReserve(cid,rid){var c=C(cid),r=rid?c.reserves.find(function(x){return x.id===rid;}):{id:uid()};var was=r.statut;
- r.lotId=val('v_lot');r.localisation=val('v_loc');r.description=val('v_desc');r.constat=val('v_con');r.echeance=val('v_ech');r.statut=val('v_st');
+ r.lotId=val('v_lot');r.localisation=val('v_loc');r.description=val('v_desc');r.constat=val('v_con');r.echeance=val('v_ech');r.statut=val('v_st');r.photos=PHT.slice();
  if(!r.description){toast('Description obligatoire');return;}if(!rid)c.reserves.push(r);
  if(was!=='levee'&&r.statut==='levee'){r.leveeLe=today();journal(c,'Réserve','Réserve levée : '+r.description);hook('reserve_levee',{chantier:c.ref,description:r.description});}
  else if(!rid)journal(c,'Réserve','Nouvelle réserve ('+lotName(c,r.lotId)+') : '+r.description);save();closeOv();rChantier();}
-function delReserve(cid,rid){var c=C(cid);c.reserves=c.reserves.filter(function(x){return x.id!==rid;});save();closeOv();rChantier();}
+function delReserve(cid,rid){if(!confirm('Supprimer cette réserve ?'))return;var c=C(cid),rv=c.reserves.find(function(x){return x.id===rid;});(rv.photos||[]).forEach(phDel);c.reserves=c.reserves.filter(function(x){return x.id!==rid;});save();closeOv();rChantier();}
 
 /* ---------- Intervenants ---------- */
 function tIntervenants(c){return'<div class="card"><div class="ch"><div class="ct">Intervenants</div><button class="btn bta bts" onclick="editInt(\''+c.id+'\')">+ Intervenant</button></div><div class="tw"><table><tr><th>Nom</th><th>Rôle</th><th>Société</th><th>Lot</th><th>E-mail</th><th>Tél.</th></tr>'+(c.intervenants.length?c.intervenants.map(function(i){return'<tr class="cl" onclick="editInt(\''+c.id+'\',\''+i.id+'\')"><td><b>'+esc(i.nom)+'</b></td><td>'+esc(i.role)+'</td><td>'+esc(i.societe)+'</td><td>'+esc(i.lotId?lotName(c,i.lotId):'')+'</td><td>'+(i.email?'<a href="mailto:'+esc(i.email)+'" onclick="event.stopPropagation()">'+esc(i.email)+'</a>':'')+'</td><td>'+(i.tel?'<a href="tel:'+esc(i.tel)+'" onclick="event.stopPropagation()">'+esc(i.tel)+'</a>':'')+'</td></tr>';}).join(''):'<tr><td colspan="6" class="empty">Aucun intervenant.</td></tr>')+'</table></div></div>';}
@@ -509,9 +531,15 @@ function saveInt(cid,iid){var c=C(cid),i=iid?intOf(c,iid):{id:uid()};i.nom=val('
 function delInt(cid,iid){var c=C(cid);c.intervenants=c.intervenants.filter(function(x){return x.id!==iid;});save();closeOv();rChantier();}
 
 /* ---------- Journal ---------- */
-function jList(arr){var ic={'manuel':'✍️','auto':'⚙️','outlook':'📧'};return arr.length?arr.map(function(j){return'<div class="li"><span>'+(ic[j.source]||'•')+'</span><div class="f"><b>'+esc(j.type)+'</b> — '+esc(j.texte)+'</div><span class="mono">'+new Date(j.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join(''):'<div class="empty">Aucun événement.</div>';}
+function jList(arr){var ic={'manuel':'✍️','auto':'⚙️','outlook':'📧','photo':'📷'};return arr.length?arr.map(function(j){return'<div class="li"><span>'+(ic[j.source]||'•')+'</span><div class="f"><b>'+esc(j.type)+'</b> — '+esc(j.texte)+((j.photos||[]).length?'<div class="phs-w">'+j.photos.map(function(id){return'<div class="ph-t"><img data-ph="'+id+'" alt=""></div>';}).join('')+'</div>':'')+'</div><span class="mono">'+new Date(j.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join(''):'<div class="empty">Aucun événement.</div>';}
 function tJournal(c){return'<div class="card"><div class="ch"><div class="ct">Journal de chantier</div><button class="btn bta bts" onclick="addNote(\''+c.id+'\')">+ Note</button></div><div class="mono" style="margin-bottom:8px">✍️ saisie · ⚙️ automatisation · 📧 importé d\'Outlook (e-mails contenant « '+esc(c.ref)+' »)</div>'+jList(c.journal)+'</div>';}
-function addNote(cid){var t=prompt('Note de chantier :');if(!t)return;var c=C(cid);journal(c,'Note',t);save();rChantier();}
+function addNote(cid){var c=C(cid);PHT=[];
+ openOv('<div class="mdh"><div class="ct">Note / photo de chantier</div><button class="x" onclick="closeOv()">×</button></div><div class="row"><div><label class="fl">Type</label><select id="n_type">'+opts(['Note','Constat','Visite','Livraison','Sécurité','Intempéries','Incident'])+'</select></div><div><label class="fl">Lot</label><select id="n_lot"><option value="">Général</option>'+opts(c.lots.map(function(l){return[l.id,l.code+' '+l.nom];}))+'</select></div></div><label class="fl">Texte</label><textarea id="n_txt" rows="3" placeholder="Ce que vous constatez…"></textarea><label class="fl">Photos</label>'+phEditor()+'<label class="chk" style="margin-top:10px;font-size:13px"><input type="checkbox" id="n_res"> Créer aussi une réserve avec ces photos</label><div class="mdf"><button class="btn btg" onclick="closeOv()">Annuler</button><button class="btn bta" onclick="saveNote(\''+cid+'\')">Enregistrer</button></div>');}
+function saveNote(cid){var c=C(cid),t=val('n_txt'),ty=val('n_type'),lot=val('n_lot');if(!t&&!PHT.length){toast('Saisissez un texte ou ajoutez une photo');return;}
+ var txt=(lot?lotName(c,lot)+' — ':'')+(t||'Photo');
+ c.journal.unshift({id:uid(),date:new Date().toISOString(),type:ty,texte:txt,source:PHT.length?'photo':'manuel',photos:PHT.slice()});
+ if($('n_res').checked){c.reserves.push({id:uid(),lotId:lot,localisation:'',description:t||'Voir photo',constat:today(),echeance:addDays(today(),15),statut:'ouverte',photos:PHT.slice()});toast('Note et réserve enregistrées');}else toast('Note enregistrée');
+ hook('note',{chantier:c.ref,type:ty,texte:txt,photos:PHT.length});save();closeOv();rChantier();}
 
 /* =========================================================
    AGENDA & TÂCHES GLOBALES
@@ -560,7 +588,8 @@ function runAutomations(manual){if(running)return Promise.resolve();running=true
    if(dest.length&&onceKey('hebdo_'+c.id+'_'+t)){sendMail(c,dest,'['+c.ref+'] Point d\'avancement hebdomadaire — '+fr(t),rapportHTML(c),'rapport');logA('Rapport hebdo','Rapport envoyé — '+c.nom);}}
  });
  DB.lastRun=new Date().toISOString();save();
- var p=(ms.account&&R.syncOutlook.on)?syncOutlook():Promise.resolve();
+ if(ms.account&&navigator.onLine)DB.outbox.filter(function(o){return!o.sent&&(o.err||o.offline)&&diff(o.d.slice(0,10),t)<=3;}).forEach(function(o){var c=DB.chantiers.find(function(x){return x.ref===o.chantier;})||{journal:[]};DB.outbox=DB.outbox.filter(function(x){return x.id!==o.id;});sendMail(c,o.to,o.subject,o.html,o.kind);logA('Boîte d\'envoi','Renvoi : '+o.subject);});
+ var p=(ms.account&&R.syncOutlook.on&&navigator.onLine)?syncOutlook():Promise.resolve();
  return p.then(function(){running=false;save();render();var n=DB.log.length-n0;if(manual)toast(n?n+' action(s) automatique(s) exécutée(s)':'Automatisations exécutées — rien à faire');}).catch(function(e){running=false;console.error(e);toast('Erreur automatisations : '+e.message);});}
 function openPointsHTML(c){var o=c.taches.filter(function(x){return x.statut!=='done';});if(!o.length)return'';return'<p><b>Points ouverts à traiter :</b></p><ul>'+o.slice(0,20).map(function(x){var p=x.assigne&&intOf(c,x.assigne);return'<li>'+esc(x.titre)+' — '+esc(p?p.nom:'')+' — '+fr(x.echeance)+'</li>';}).join('')+'</ul>';}
 function rapportHTML(c){return mailTpl('Bonjour,','<p>Voici le point d\'avancement du chantier <b>'+esc(c.nom)+'</b> ('+esc(c.ref)+') :</p><ul><li>Phase : <b>'+esc(PHASES[c.phase||0])+'</b></li><li>Avancement global : <b>'+chPct(c)+' %</b></li><li>Tâches ouvertes : '+c.taches.filter(function(x){return x.statut!=='done';}).length+' dont '+tachesRetard(c).length+' en retard</li><li>Réserves ouvertes : '+reservesOuvertes(c).length+'</li></ul><table style="border-collapse:collapse">'+c.lots.map(function(l){return'<tr><td style="border:1px solid #ccc;padding:3px 6px">'+l.code+' '+esc(l.nom)+'</td><td style="border:1px solid #ccc;padding:3px 6px">'+lotPct(l)+' %</td><td style="border:1px solid #ccc;padding:3px 6px">'+(lotEcart(l)<=-DB.rules.alerteRetard.seuil&&lotPct(l)<100?'⚠️ retard':'')+'</td></tr>';}).join('')+'</table>');}
@@ -568,10 +597,10 @@ function rapportHTML(c){return mailTpl('Bonjour,','<p>Voici le point d\'avanceme
 /* Envoi e-mail : Graph si connecté, sinon boîte d'envoi */
 function sendMail(c,to,subject,html,kind){var item={id:uid(),d:new Date().toISOString(),chantier:c.ref,to:to,subject:subject,html:html,kind:kind,sent:false};
  hook('email',{chantier:c.ref,to:to,subject:subject,kind:kind});
- if(ms.account){graph('POST','/me/sendMail',{message:{subject:subject,body:{contentType:'HTML',content:html},toRecipients:to.map(function(a){return{emailAddress:{address:a}};})},saveToSentItems:true})
+ if(ms.account&&navigator.onLine){graph('POST','/me/sendMail',{message:{subject:subject,body:{contentType:'HTML',content:html},toRecipients:to.map(function(a){return{emailAddress:{address:a}};})},saveToSentItems:true})
   .then(function(){item.sent=true;item.via='Outlook';DB.outbox.unshift(item);DB.outbox=DB.outbox.slice(0,200);journal(c,'E-mail','Envoyé via Outlook : '+subject,'auto');save();})
   .catch(function(e){item.err=e.message;DB.outbox.unshift(item);save();toast('Échec envoi Outlook — message placé en boîte d\'envoi');});}
- else{DB.outbox.unshift(item);DB.outbox=DB.outbox.slice(0,200);}save();}
+ else{if(ms.account)item.offline=true;DB.outbox.unshift(item);DB.outbox=DB.outbox.slice(0,200);}save();}
 function htmlToText(h){var d=document.createElement('div');d.innerHTML=h.replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|tr|li|h1|h2|div)>/gi,'\n').replace(/<\/td>/gi,' | ');return d.textContent.replace(/\n{3,}/g,'\n\n').trim();}
 function sendOutbox(id){var o=DB.outbox.find(function(x){return x.id===id;});var body=htmlToText(o.html);if(body.length>1800)body=body.slice(0,1800)+'\n[…] (voir PDF)';
  location.href='mailto:'+encodeURIComponent(o.to.join(';'))+'?subject='+encodeURIComponent(o.subject)+'&body='+encodeURIComponent(body);o.sent=true;o.via='mailto';save();setTimeout(render,300);}
@@ -690,10 +719,59 @@ function rConn(){var s=DB.settings;head('Connexions','Outlook / Microsoft 365 et
  '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Format des événements</summary><pre class="mono" style="white-space:pre-wrap;margin-top:8px">{ "source": "equilibre-chantier", "event": "cr_diffuse", "date": "2026-11-06T10:00:00Z",\n  "data": { "chantier": "CH-2026-001", "numero": 4, ... } }\n\nÉvénements : rdv_cree, avancement, phase, tache_creee, tache_statut, cr_diffuse, reserve_levee, alerte_retard, email, test</pre></details></div>'+
  '<div class="card"><div class="ch"><div class="ct">📅 Sans connexion</div></div><p style="font-size:13px">Export .ics (Outlook, Google Agenda, Apple Calendrier) et envoi des e-mails via votre messagerie habituelle depuis la boîte d\'envoi.</p><div class="mdf" style="justify-content:flex-start"><button class="btn btg" onclick="exportICS()">⬇ Exporter tous les RDV (.ics)</button></div></div>';}
 
-function rParam(){var s=DB.settings;head('Paramètres','Identité, signature et sauvegarde');
+function rParam(){var s=DB.settings;head('Paramètres','Identité, signature et sauvegarde');setTimeout(stoInfo,0);
  $('view').innerHTML='<div class="card"><div class="ct">Identité</div><div class="row"><div><label class="fl">Nom</label><input id="p_nom" value="'+esc(s.nom)+'"></div><div><label class="fl">Société</label><input id="p_soc" value="'+esc(s.societe)+'"></div><div><label class="fl">Votre e-mail</label><input id="p_mail" value="'+esc(s.email)+'"></div></div><label class="fl">Signature des e-mails</label><textarea id="p_sig" rows="3">'+esc(s.signature)+'</textarea><div class="mdf"><button class="btn bta" onclick="DB.settings.nom=val(\'p_nom\');DB.settings.societe=val(\'p_soc\');DB.settings.email=val(\'p_mail\');DB.settings.signature=val(\'p_sig\');save();toast(\'Enregistré\')">Enregistrer</button></div></div>'+
- '<div class="card"><div class="ct">Sauvegarde</div><p style="font-size:13px;margin:8px 0">Les données sont stockées dans ce navigateur. Exportez régulièrement pour les sauvegarder ou les transférer sur un autre appareil.</p><div class="row" style="max-width:520px"><button class="btn btv" onclick="download(JSON.stringify(DB,null,1),\'chantiers_\'+today()+\'.json\',\'application/json\')">⬇ Exporter (JSON)</button><label class="btn btb" style="text-align:center">⬆ Importer<input type="file" accept=".json" style="display:none" onchange="importDB(this)"></label><button class="btn btr" onclick="if(confirm(\'Tout effacer ?\')){localStorage.removeItem(KEY);location.reload()}">Réinitialiser</button></div></div>';}
-function importDB(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(!d.chantiers)throw 0;DB=d;save();location.reload();}catch(e){toast('Fichier invalide');}};r.readAsText(f);}
+ '<div class="card"><div class="ct">Application mobile</div><p style="font-size:13px;margin:8px 0">'+installHelp()+'</p><div class="mono" id="stoInfo"></div></div>'+
+ '<div class="card"><div class="ct">Sauvegarde</div><p style="font-size:13px;margin:8px 0">Les données sont stockées dans ce navigateur. Exportez régulièrement pour les sauvegarder ou les transférer sur un autre appareil.</p><div class="row" style="max-width:520px"><button class="btn btv" onclick="exportDB()">⬇ Exporter</button><label class="btn btb" style="text-align:center">⬆ Importer<input type="file" accept=".json" style="display:none" onchange="importDB(this)"></label><button class="btn btr" onclick="if(confirm(\'Tout effacer ?\')){localStorage.removeItem(KEY);location.reload()}">Réinitialiser</button></div></div>';}
+function exportDB(){phAll().then(function(ph){var o=JSON.parse(JSON.stringify(DB));o._photos=ph;download(JSON.stringify(o),'chantiers_'+today()+'.json','application/json');toast('Export : '+Object.keys(ph).length+' photo(s) incluse(s)');});}
+function importDB(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var d;try{d=JSON.parse(r.result);if(!d.chantiers)throw 0;}catch(e){toast('Fichier invalide');return;}
+ var ph=d._photos||{};delete d._photos;Promise.all(Object.keys(ph).map(function(k){return phPut(k,ph[k]);})).then(function(){DB=d;save();location.reload();}).catch(function(e){toast('Import des photos impossible : '+e.message);});};r.readAsText(f);}
+
+/* =========================================================
+   PHOTOS (IndexedDB, compressées)
+   ========================================================= */
+var PHT=[];var _pdb=null;
+function phDB(){if(_pdb)return _pdb;_pdb=new Promise(function(res,rej){if(!window.indexedDB){rej(new Error('IndexedDB indisponible'));return;}var q=indexedDB.open('eqbtp_photos',1);q.onupgradeneeded=function(){q.result.createObjectStore('p');};q.onsuccess=function(){res(q.result);};q.onerror=function(){rej(q.error);};});return _pdb;}
+function phTx(mode,fn){return phDB().then(function(db){return new Promise(function(res,rej){var t=db.transaction('p',mode),out=fn(t.objectStore('p'));t.oncomplete=function(){res(out?out.result:undefined);};t.onerror=function(){rej(t.error);};t.onabort=function(){rej(t.error||new Error('Stockage plein'));};});});}
+function phPut(id,data){return phTx('readwrite',function(st){st.put(data,id);});}
+function phDel(id){delete _phc[id];return phTx('readwrite',function(st){st.delete(id);}).catch(function(){});}
+var _phc={};
+function phGet(id){if(_phc[id])return Promise.resolve(_phc[id]);return phTx('readonly',function(st){return st.get(id);}).then(function(v){if(v)_phc[id]=v;return v;});}
+function phAll(){return phDB().then(function(db){return new Promise(function(res,rej){var o={},t=db.transaction('p','readonly'),q=t.objectStore('p').openCursor();q.onsuccess=function(){var cu=q.result;if(cu){o[cu.key]=cu.value;cu.continue();}};t.oncomplete=function(){res(o);};t.onerror=function(){rej(t.error);};});}).catch(function(){return{};});}
+function fillPh(root){var L=[].slice.call((root||document).querySelectorAll('img[data-ph]:not([src])'));
+ return Promise.all(L.map(function(im){return phGet(im.dataset.ph).then(function(v){if(v){im.src=v;im.onclick=function(e){e.stopPropagation();$('lbImg').src=v;$('lb').classList.add('on');};}else{var t=im.closest('.ph-t');if(t)t.remove();}}).catch(function(){});}));}
+function compressImg(file){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();
+ im.onload=function(){var M=1600,w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,M/Math.max(w,h));var cv=document.createElement('canvas');cv.width=Math.round(w*k);cv.height=Math.round(h*k);
+  cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',.72));};
+ im.onerror=function(){URL.revokeObjectURL(u);rej(new Error('Image illisible'));};im.src=u;});}
+function phEditor(){return'<div class="phs-w" id="phEd">'+PHT.map(phThumbEd).join('')+'<label class="ph-add" onclick="$(\'phInput\').click()"><b>📷</b>Ajouter</label></div><div class="mono" style="margin-top:4px">Sur téléphone : appareil photo ou galerie. Photos compressées et stockées sur l\'appareil.</div>';}
+function phThumbEd(id){return'<div class="ph-t" data-id="'+id+'"><img data-ph="'+id+'" alt=""><button type="button" title="Retirer" onclick="phRemove(\''+id+'\')">×</button></div>';}
+function phRemove(id){PHT=PHT.filter(function(x){return x!==id;});var e=document.querySelector('#phEd .ph-t[data-id="'+id+'"]');if(e)e.remove();}
+$('phInput').addEventListener('change',function(){var fs=[].slice.call(this.files||[]);this.value='';if(!fs.length)return;toast('Traitement de '+fs.length+' photo(s)…');
+ fs.reduce(function(p,f){return p.then(function(){return compressImg(f).then(function(data){var id='ph_'+uid();return phPut(id,data).then(function(){_phc[id]=data;PHT.push(id);var ed=$('phEd');if(ed){var d=document.createElement('div');d.innerHTML=phThumbEd(id);ed.insertBefore(d.firstChild,ed.lastElementChild);fillPh(ed);}});});});},Promise.resolve())
+ .then(function(){toast(fs.length+' photo(s) ajoutée(s)');}).catch(function(e){toast('Photo non enregistrée : '+e.message);});});
+function phUsed(){var u={};DB.chantiers.forEach(function(c){c.reserves.forEach(function(r){(r.photos||[]).forEach(function(i){u[i]=1;});});c.journal.forEach(function(j){(j.photos||[]).forEach(function(i){u[i]=1;});});});return u;}
+function phGC(){if($('ov').classList.contains('on'))return;phAll().then(function(all){var u=phUsed();Object.keys(all).filter(function(k){return!u[k];}).forEach(phDel);});}
+function stoInfo(){var e=$('stoInfo');if(!e)return;phAll().then(function(all){var n=Object.keys(all).length;
+ if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(function(x){e.textContent=n+' photo(s) · espace utilisé : '+(x.usage/1048576).toFixed(1)+' Mo sur '+(x.quota/1048576).toFixed(0)+' Mo disponibles'+(_persist?' · stockage persistant ✓':'');});else e.textContent=n+' photo(s)';});}
+
+/* =========================================================
+   APPLICATION INSTALLABLE (PWA) & HORS RÉSEAU
+   ========================================================= */
+var _instEvt=null,_persist=false;
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
+function isIOS(){return/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function installHelp(){if(isStandalone())return'✓ L\'application est installée sur cet appareil.';
+ if(_instEvt)return'<button class="btn bta" onclick="doInstall()">📲 Installer l\'application</button>';
+ if(isIOS())return'iPhone / iPad : dans <b>Safari</b>, touchez <b>Partager</b> (carré avec flèche) puis <b>Sur l\'écran d\'accueil</b>.';
+ return'Android : menu <b>⋮</b> de Chrome → <b>Installer l\'application</b> (ou « Ajouter à l\'écran d\'accueil »). Ordinateur : icône d\'installation dans la barre d\'adresse.';}
+function doInstall(){if(!_instEvt)return;_instEvt.prompt();_instEvt.userChoice.then(function(r){if(r.outcome==='accepted')toast('Application installée');_instEvt=null;render();});}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_instEvt=e;if(S.page==='param')rParam();});
+function netStatus(){var e=$('netSt');if(e)e.innerHTML=navigator.onLine?'':'<span class="off">● Hors réseau — enregistrement local</span>';}
+window.addEventListener('online',function(){netStatus();toast('De retour en ligne — synchronisation');runAutomations(false);});
+window.addEventListener('offline',function(){netStatus();toast('Hors réseau : vos saisies restent enregistrées sur l\'appareil');});
+if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw-chantier.js').catch(function(e){console.warn('SW',e);});});}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(function(p){if(p){_persist=true;return;}return navigator.storage.persist().then(function(ok){_persist=ok;});}).catch(function(){});}
 
 /* =========================================================
    DÉMO
@@ -719,7 +797,7 @@ function demo(){var t=today(),deb=addDays(t,-120);
    DÉMARRAGE
    ========================================================= */
 window.addEventListener('keydown',function(e){if(e.key==='Escape')closeOv();});
-render();
+render();netStatus();setTimeout(phGC,5000);
 window.addEventListener('load',function(){msInit().then(function(){runAutomations(false);});});
 setInterval(function(){runAutomations(false);},15*60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&DB.lastRun&&Date.now()-new Date(DB.lastRun)>10*60*1000)runAutomations(false);});

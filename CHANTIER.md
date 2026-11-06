@@ -16,6 +16,19 @@ Application web en un seul fichier (`chantier.html`), sans serveur ni abonnement
 | **Intervenants** | Annuaire par chantier : MOA, MOE, entreprises, bureau de contrôle, CSPS… |
 | **Journal** | Historique automatique : saisies, automatisations, e-mails importés d'Outlook. |
 
+## Sur téléphone
+
+1. Ouvrez l'adresse de l'application (voir « Mise en place » ci-dessous) dans **Safari** (iPhone) ou **Chrome** (Android).
+2. Installez-la :
+   - **iPhone** : Partager → **Sur l'écran d'accueil**
+   - **Android** : menu ⋮ → **Installer l'application**
+3. L'application s'ouvre alors en plein écran avec sa propre icône. Elle fonctionne **hors réseau**, et la synchronisation Outlook reprend dès le retour du réseau. Les e-mails préparés hors réseau sont renvoyés automatiquement s'ils datent de moins de 3 jours.
+
+**Photos** : le bouton « 📷 Note / photo » d'un chantier ouvre l'appareil photo ou la galerie, et l'onglet Réserves propose le même bouton.
+- Les photos sont compressées (1600 px max, environ 150 à 400 Ko) et stockées sur l'appareil, dans IndexedDB.
+- Elles apparaissent dans le journal, dans les réserves et dans le PDF du CR.
+- Elles sont incluses dans l'export JSON. Elles ne sont pas jointes aux e-mails.
+
 ## Automatisations
 
 Elles s'exécutent à l'ouverture de l'application, puis toutes les 15 minutes tant qu'elle reste ouverte. Le bouton « Exécuter maintenant » les lance à la demande.
@@ -70,4 +83,4 @@ Sans connexion, deux solutions de repli :
 
 - **Les automatisations ne tournent que lorsque l'application est ouverte** (sur PC ou téléphone), faute de serveur. À la réouverture, l'app rattrape tout ce qui était dû : rappels, CR, relances. Pour des envois garantis même app fermée, il faut soit un flux Power Automate planifié branché sur le webhook, soit un petit backend. C'est l'évolution possible.
 - **Les données restent dans le navigateur** (localStorage). Il n'y a pas de synchronisation multi-appareils ni multi-utilisateurs native. Exportez-les régulièrement en JSON (onglet Paramètres) pour les sauvegarder ou les transférer.
-- **Les photos ne sont pas stockées** : le stockage du navigateur est limité.
+- **Les photos restent sur l'appareil** où elles ont été prises. Pour les transférer, passez par l'export / import JSON.
