@@ -2,7 +2,7 @@
 
 *Aequo* vient du latin *aequus* : égal, plan, de niveau. C'est la racine du mot « équilibre », et le nom renvoie à la bulle centrée du niveau de l'icône.
 
-Application web en un seul fichier (`chantier.html`), sans serveur ni abonnement. Elle sert au suivi de chantiers tous corps d'état et se connecte à Outlook / Microsoft 365.
+Application web en un seul fichier (`aequo/index.html`), sans serveur ni abonnement. Elle sert au suivi de chantiers tous corps d'état et se connecte à Outlook / Microsoft 365.
 
 ## Fonctions
 
@@ -58,10 +58,10 @@ Elles s'exécutent à l'ouverture de l'application, puis toutes les 15 minutes t
 
 ### Mise en place (une seule fois)
 
-1. **Héberger l'application en https.** Le plus simple est GitHub Pages : Settings → Pages → branche → `/root`. L'URL sera `https://<compte>.github.io/-quilibre-/chantier.html`. Microsoft refuse l'ouverture locale `file://`.
+1. **Héberger l'application en https.** Le plus simple est GitHub Pages : Settings → Pages → branche → `/root`. L'URL sera `https://<compte>.github.io/-quilibre-/aequo/`. L'ancienne adresse `chantier.html` y renvoie automatiquement. Microsoft refuse l'ouverture locale `file://`.
 2. Sur [Microsoft Entra → Inscriptions d'applications](https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade), cliquez **Nouvelle inscription** :
    - Comptes : « tout annuaire + comptes Microsoft personnels » (ou votre seule organisation)
-   - URI de redirection : **Application monopage (SPA)**, avec l'URL exacte de l'application
+   - URI de redirection : **Application monopage (SPA)**, avec l'URL exacte de l'application (`https://<compte>.github.io/-quilibre-/aequo/`)
 3. Copiez l'**ID d'application (client)** dans l'onglet *Connexions*, puis cliquez **Se connecter à Microsoft**.
 4. Autorisations déléguées demandées : `User.Read`, `Calendars.ReadWrite`, `Mail.Send`, `Mail.Read`, `Tasks.ReadWrite`. En entreprise, l'administrateur doit parfois donner son consentement.
 
