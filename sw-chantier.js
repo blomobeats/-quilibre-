@@ -2,8 +2,8 @@
    - Pages de l'app : réseau d'abord, cache en secours (hors réseau)
    - Bibliothèques / polices : cache d'abord, mise à jour en arrière-plan
    - Microsoft (connexion, Graph) : jamais mis en cache */
-var VERSION = 'chantier-v2';
-var CORE = ['chantier.html', 'chantier.webmanifest', 'icons/chantier-192.png', 'icons/chantier-512.png', 'icons/chantier-180.png'];
+var VERSION = 'chantier-v3';
+var CORE = ['chantier.html', 'chantier.webmanifest', 'icons/chantier-192.png', 'icons/chantier-512.png', 'icons/chantier-180.png', 'icons/chantier-32.png', 'icons/chantier.svg'];
 var STATIC_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', function (e) {
