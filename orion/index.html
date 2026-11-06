@@ -718,7 +718,7 @@ function vDonnees() {
     ? `<ol class="ul"><li>Dans Orion sur claude.ai, onglet <b>Données</b> → « Exporter pour l'appli téléphone ».</li><li>Ici, « Importer un export Orion » et choisis ce fichier. Refais-le quand tu veux rafraîchir.</li><li>Ce que tu saisis ici reste sur ce téléphone : « Exporter mes saisies », puis dans Orion sur claude.ai « Importer des saisies de l'appli ». Le bilan du soir les intègre ensuite.</li></ol>
        <h3 style="margin-top:16px">Installer l'appli</h3><ul class="ul"><li><b>iPhone</b> : Safari → Partager → Sur l'écran d'accueil.</li><li><b>Android</b> : Chrome → menu ⋮ → Installer l'application.</li></ul><div class="d" style="margin-top:8px">Hors réseau : tout fonctionne, la carte 3D aussi une fois ouverte une première fois avec du réseau.</div>`
     : `<ol class="ul"><li>« Exporter pour l'appli téléphone » enregistre un fichier .json avec toutes tes données.</li><li>Dans l'appli Orion installée, onglet Données → « Importer un export Orion ».</li><li>Ce que tu saisis dans l'appli : exporte-le là-bas, puis « Importer des saisies de l'appli » ici. Elles rejoignent la base et le bilan du soir les intègre.</li></ol>`;
-  return `<div class="vh"><div><h1>Données</h1><p>${src}</p></div>${syncTag()}</div>
+  return `<div class="vh"><div><h1>Données</h1><p>${src}</p></div>${syncTag()}</div>${pwa && window.orionInstallHTML ? window.orionInstallHTML() : ''}
   <div class="panel"><h3>Import / export</h3><div class="tools">${actions}</div></div>
   <div class="grid g2"><div class="panel"><h3>Comment ça marche</h3>${how}</div>
   <div class="panel"><h3>Saisies ${pwa ? 'sur cet appareil' : 'en attente du bilan'} · ${ops.length}</h3>${ops.slice(0, 40).map(o => `<div class="it"><span class="d">${esc(fmt(String(o.ts).slice(0, 10)))}</span><span style="font-size:12.5px">${esc(opTxt(o))}</span><span class="tg">${esc(OPL[o.op] || o.op)}</span></div>`).join('') || '<div class="empty">Aucune saisie.</div>'}</div></div>`;
@@ -826,6 +826,22 @@ let rT = null; addEventListener('resize', () => { clearTimeout(rT); rT = setTime
 /* Appli installée : données importées sur l'appareil (rien n'est publié dans le dépôt) */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+/* Aide à l'installation : bouton natif sur Android, mode d'emploi sur iPhone, alerte dans les navigateurs intégrés */
+let deferredInstall = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; document.querySelectorAll('.inst-btn').forEach(x => x.hidden = false); });
+window.orionInstallHTML = function () {
+  const ua = navigator.userAgent, standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone) return '';
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const inApp = /Claude|FBAN|FBAV|Instagram|Line\/|GSA\/|Gmail|LinkedInApp|Twitter|wv\)/i.test(ua) || (ios && !/Safari\//.test(ua));
+  const url = location.href.split('#')[0];
+  let t;
+  if (inApp) t = `<b>Ouvre cette page dans ${ios ? 'Safari' : 'Chrome'}</b> pour pouvoir l’installer : le navigateur de cette appli ne le permet pas.<div style="margin-top:8px"><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}').then(()=>this.textContent='Adresse copiée ✓')">Copier l’adresse</button></div>`;
+  else if (ios) t = `<b>Installer sur l’iPhone</b> : touche <b>Partager</b> <span style="display:inline-block;border:1.5px solid currentColor;border-radius:3px;width:11px;height:12px;vertical-align:-1px"></span> (en bas de Safari${/CriOS/.test(ua) ? ', ou en haut dans Chrome' : ''}), fais défiler, puis <b>« Sur l’écran d’accueil »</b>.`;
+  else t = `<b>Installer sur ce téléphone</b> : menu <b>⋮</b> de Chrome → <b>« Installer l’application »</b> ou « Ajouter à l’écran d’accueil ».`;
+  return `<div class="inst" style="font-size:13px;line-height:1.6;text-align:left;padding:12px 14px;border:1px solid rgba(94,231,255,.35);border-radius:12px;background:rgba(94,231,255,.06);margin-top:14px">${t}<div><button class="btn pri inst-btn" ${deferredInstall ? '' : 'hidden'} style="margin-top:10px" onclick="window.orionInstall()">Installer Orion</button></div></div>`;
+};
+window.orionInstall = async function () { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; document.querySelectorAll('.inst').forEach(x => x.remove()); };
 window.orionWelcome = function () {
   document.body.classList.add('inview');
   const i = document.getElementById('intro');
@@ -838,7 +854,7 @@ window.orionWelcome = function () {
     <p style="color:var(--mut);font-size:13.5px;line-height:1.6;margin:14px 0 18px">Pour démarrer, importe tes données.<br>Dans Orion sur claude.ai : onglet <b style="color:var(--txt)">Données</b> → « Exporter pour l'appli téléphone », puis choisis ce fichier ici.</p>
     <label style="position:relative;display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:10px;background:linear-gradient(90deg,#9fefff,var(--cyan));color:#06101e;font:600 13.5px var(--sans);cursor:pointer">Importer un export Orion<input type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" id="wimp"></label>
     <p id="werr" style="color:#ff7a8a;font-size:12.5px;min-height:1em;margin:12px 0 0"></p>
-    <p style="color:var(--dim);font:400 10.5px var(--mono);margin:6px 0 0;line-height:1.6">Tes données restent sur cet appareil.<br>Elles ne sont envoyées nulle part.</p>`;
+    <p style="color:var(--dim);font:400 10.5px var(--mono);margin:6px 0 0;line-height:1.6">Tes données restent sur cet appareil.<br>Elles ne sont envoyées nulle part.</p>` + window.orionInstallHTML();
   document.body.appendChild(w); requestAnimationFrame(() => w.style.opacity = 1);
   document.getElementById('wimp').onchange = async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
