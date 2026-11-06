@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ÉQUILIBRE — Suivi de chantier</title>
+<title>Aequo — Suivi de chantier</title>
 <meta name="theme-color" content="#10151f">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Chantiers">
+<meta name="apple-mobile-web-app-title" content="Aequo">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="chantier.webmanifest">
@@ -150,7 +150,7 @@ label.fl{display:block;font-family:var(--fm);font-size:9px;text-transform:upperc
 </head>
 <body>
 <aside class="sb">
- <div class="sbl"><div class="sbb"><img src="icons/chantier.svg" alt="" width="30" height="30" style="border-radius:7px;vertical-align:-6px;margin-right:8px">ÉQUILIBRE <span>·</span> BTP</div><div class="sbp">Suivi de chantier TCE</div></div>
+ <div class="sbl"><div class="sbb"><img src="icons/chantier.svg" alt="" width="30" height="30" style="border-radius:7px;vertical-align:-6px;margin-right:10px">AEQUO</div><div class="sbp">Suivi de chantier TCE</div></div>
  <nav class="sbn" id="nav"></nav>
  <div class="sbf">
   <div class="conn"><span class="dot" id="msDot"></span><span id="msLbl">Outlook non connecté</span></div>
@@ -507,7 +507,7 @@ function crHTML(c,cr,mail){var P={P:'Présent',A:'Absent',E:'Excusé'},s='font-f
  Object.keys(grp).forEach(function(k){grp[k].forEach(function(o){var r=o.resp&&intOf(c,o.resp);h+='<tr><td style="'+td+'">'+esc(lotName(c,k))+'</td><td style="'+td+'">'+esc(o.texte).replace(/\n/g,'<br>')+(o.report?' <i>(reporté)</i>':'')+'</td><td style="'+td+'">'+esc({info:'Info',action:'Action',reserve:'Réserve',decision:'Décision'}[o.type])+'</td><td style="'+td+'">'+esc(r?r.nom:'')+'</td><td style="'+td+'">'+(o.ech?fr(o.ech):'')+'</td><td style="'+td+'">'+(o.type==='info'?'':o.solde?'Soldé':'En cours')+'</td></tr>';});});
  h+='</table><h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Avancement des lots</h2><table style="'+tb+'"><tr><th style="'+td+'">Lot</th><th style="'+td+'">Entreprise</th><th style="'+td+'">Avancement</th><th style="'+td+'">Prévu</th></tr>'+c.lots.map(function(l){var a=(cr.avancement||[]).find(function(x){return x.lotId===l.id;});var th=lotTheo(l);return'<tr><td style="'+td+'">'+l.code+' '+esc(l.nom)+'</td><td style="'+td+'">'+esc(l.entreprise||'')+'</td><td style="'+td+'">'+(a?a.pct:lotPct(l))+' %</td><td style="'+td+'">'+(th==null?'':th+' %')+'</td></tr>';}).join('')+'</table>';
  var rv=reservesOuvertes(c);if(rv.length)h+='<h2 style="font-size:14px;border-bottom:1px solid #333;margin-top:14px">Réserves ouvertes ('+rv.length+')</h2><table style="'+tb+'">'+rv.map(function(r){return'<tr><td style="'+td+'">'+esc(lotName(c,r.lotId))+'</td><td style="'+td+'">'+esc(r.localisation)+' — '+esc(r.description)+(!mail&&(r.photos||[]).length?'<br>'+r.photos.slice(0,4).map(function(id){return'<img data-ph="'+id+'" alt="">';}).join(''):'')+'</td><td style="'+td+'">'+fr(r.echeance)+'</td></tr>';}).join('')+'</table>';
- h+='<p style="margin-top:14px"><b>Prochaine réunion : '+(cr.prochaine?frl(cr.prochaine)+' à '+esc(cr.prochaineH||''):'à définir')+'</b></p><p style="font-size:11px;color:#666">Sans observation écrite sous 8 jours, le présent compte rendu est réputé accepté.</p>'+(mail&&DB.settings.signature?'<p>'+esc(DB.settings.signature).replace(/\n/g,'<br>')+'</p>':'')+'</div>';return h;}
+ h+='<p style="margin-top:14px"><b>Prochaine réunion : '+(cr.prochaine?frl(cr.prochaine)+' à '+esc(cr.prochaineH||''):'à définir')+'</b></p><p style="font-size:11px;color:#666">Sans observation écrite sous 8 jours, le présent compte rendu est réputé accepté.</p><p style="font-size:10px;color:#999">Document établi avec Aequo · Suivi de chantier</p>'+(mail&&DB.settings.signature?'<p>'+esc(DB.settings.signature).replace(/\n/g,'<br>')+'</p>':'')+'</div>';return h;}
 function printCR(cid,crid){var c=C(cid),cr=c.crs.find(function(x){return x.id===crid;});$('printArea').innerHTML=crHTML(c,cr,false);fillPh($('printArea')).then(function(){setTimeout(function(){window.print();},150);});}
 
 /* ---------- Réserves ---------- */
@@ -608,12 +608,12 @@ function sendOutbox(id){var o=DB.outbox.find(function(x){return x.id===id;});var
 function retryOutbox(){if(!ms.account){toast('Connectez Outlook d\'abord');return;}DB.outbox.filter(function(o){return!o.sent;}).forEach(function(o){var c=DB.chantiers.find(function(x){return x.ref===o.chantier;})||{journal:[]};DB.outbox=DB.outbox.filter(function(x){return x.id!==o.id;});sendMail(c,o.to,o.subject,o.html,o.kind);});save();render();}
 
 /* Webhook (Power Automate / Make / Zapier / n8n) */
-function hook(event,data){var u=DB.settings.webhook;if(!u)return;try{fetch(u,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({source:'equilibre-chantier',event:event,date:new Date().toISOString(),data:data})}).catch(function(){});}catch(e){}}
+function hook(event,data){var u=DB.settings.webhook;if(!u)return;try{fetch(u,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({source:'aequo-chantier',event:event,date:new Date().toISOString(),data:data})}).catch(function(){});}catch(e){}}
 
 /* ICS */
 function icsEsc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
 function icsDT(d,h,add){var x=new Date(d+'T'+(h||'09:00')+':00');x.setMinutes(x.getMinutes()+(add||0));return x.getFullYear()+pad(x.getMonth()+1)+pad(x.getDate())+'T'+pad(x.getHours())+pad(x.getMinutes())+'00';}
-function exportICS(cid){var L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Equilibre//Chantier//FR','CALSCALE:GREGORIAN'];
+function exportICS(cid){var L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Aequo//Suivi de chantier//FR','CALSCALE:GREGORIAN'];
  (cid?[C(cid)]:DB.chantiers).forEach(function(c){c.reunions.forEach(function(r){L.push('BEGIN:VEVENT','UID:'+r.id+'@equilibre-chantier','DTSTAMP:'+icsDT(today(),'00:00'),'DTSTART:'+icsDT(r.date,r.heure),'DTEND:'+icsDT(r.date,r.heure,r.duree||60),'SUMMARY:'+icsEsc('['+c.ref+'] '+r.type+' — '+c.nom),'LOCATION:'+icsEsc(r.lieu||c.adresse),'DESCRIPTION:'+icsEsc(r.notes),'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:Rappel','END:VALARM','END:VEVENT');});});
  L.push('END:VCALENDAR');download(L.join('\r\n'),'chantiers.ics','text/calendar');}
 function download(txt,name,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:type}));a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);}
@@ -717,7 +717,7 @@ function rConn(){var s=DB.settings;head('Connexions','Outlook / Microsoft 365 et
  '<li>Autorisations demandées (déléguées) : User.Read, Calendars.ReadWrite, Mail.Send, Mail.Read, Tasks.ReadWrite. Dans une entreprise, l\'administrateur peut devoir donner son consentement.</li></ol>'+
  '<p class="mono" style="margin-top:8px">⚠️ L\'application doit être servie en https (ex. GitHub Pages) ou sur http://localhost — l\'ouverture en file:// n\'est pas acceptée par Microsoft.</p></details></div>'+
  '<div class="card"><div class="ch"><div class="ct">🔗 Autres applications (webhook)</div></div><p style="font-size:13px">Chaque événement (RDV créé, avancement, tâche, CR diffusé, alerte de retard, e-mail…) est envoyé en JSON à l\'URL ci-dessous. Branchez-y <b>Power Automate</b>, <b>Make</b>, <b>Zapier</b> ou <b>n8n</b> pour alimenter Teams, Slack, Google Agenda, Excel / SharePoint, WhatsApp, votre ERP, etc.</p><label class="fl">URL du webhook</label><div class="row"><input id="c_wh" value="'+esc(s.webhook)+'" placeholder="https://prod-00.westeurope.logic.azure.com/workflows/…" style="flex:4"><button class="btn btg" style="flex:0" onclick="DB.settings.webhook=val(\'c_wh\');save();hook(\'test\',{message:\'Test de connexion\'});toast(\'Enregistré — événement test envoyé\')">Enregistrer & tester</button></div>'+
- '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Format des événements</summary><pre class="mono" style="white-space:pre-wrap;margin-top:8px">{ "source": "equilibre-chantier", "event": "cr_diffuse", "date": "2026-11-06T10:00:00Z",\n  "data": { "chantier": "CH-2026-001", "numero": 4, ... } }\n\nÉvénements : rdv_cree, avancement, phase, tache_creee, tache_statut, cr_diffuse, reserve_levee, alerte_retard, email, test</pre></details></div>'+
+ '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Format des événements</summary><pre class="mono" style="white-space:pre-wrap;margin-top:8px">{ "source": "aequo-chantier", "event": "cr_diffuse", "date": "2026-11-06T10:00:00Z",\n  "data": { "chantier": "CH-2026-001", "numero": 4, ... } }\n\nÉvénements : rdv_cree, avancement, phase, tache_creee, tache_statut, cr_diffuse, reserve_levee, alerte_retard, email, test</pre></details></div>'+
  '<div class="card"><div class="ch"><div class="ct">📅 Sans connexion</div></div><p style="font-size:13px">Export .ics (Outlook, Google Agenda, Apple Calendrier) et envoi des e-mails via votre messagerie habituelle depuis la boîte d\'envoi.</p><div class="mdf" style="justify-content:flex-start"><button class="btn btg" onclick="exportICS()">⬇ Exporter tous les RDV (.ics)</button></div></div>';}
 
 function rParam(){var s=DB.settings;head('Paramètres','Identité, signature et sauvegarde');setTimeout(stoInfo,0);

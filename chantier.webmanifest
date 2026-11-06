@@ -1,6 +1,6 @@
 {
-  "name": "Équilibre · Suivi de chantier",
-  "short_name": "Chantiers",
+  "name": "Aequo · Suivi de chantier",
+  "short_name": "Aequo",
   "description": "Suivi de chantier tous corps d'état : lots, planning, CR, réserves, automatisations Outlook.",
   "lang": "fr",
   "start_url": "chantier.html",
