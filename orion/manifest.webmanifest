@@ -1,0 +1,19 @@
+{
+  "name": "Orion · Carte de connaissances",
+  "short_name": "Orion",
+  "description": "La carte 3D de tes connaissances, tes objectifs, ton suivi échecs, course et piano, et ton journal.",
+  "lang": "fr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#02030a",
+  "theme_color": "#02030a",
+  "icons": [
+    { "src": "icons/orion.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/orion-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/orion-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/orion-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

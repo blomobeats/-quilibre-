@@ -1,0 +1,1599 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orion</title>
+<meta name="description" content="Orion : la carte 3D de tes connaissances, tes objectifs et ton suivi.">
+<meta name="theme-color" content="#02030a">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orion">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/orion.svg" type="image/svg+xml">
+<link rel="icon" href="icons/orion-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/orion-180.png">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#02030a; --glass2:rgba(18,26,52,.72); --edge:rgba(130,170,255,.14); --edge2:rgba(140,195,255,.38);
+  --txt:#eaf0ff; --mut:#8f9cc2; --dim:#58627f; --cyan:#5ee7ff; --gold:#ffcf5c; --ok:#6ff0b0;
+  --sans:"Space Grotesk","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--sans)}
+canvas{display:block;position:fixed;inset:0;cursor:grab}
+canvas.drag{cursor:grabbing}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+#scan{display:none!important;position:fixed;inset:0;pointer-events:none;z-index:3;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);opacity:.6}
+.lab{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11.5px;letter-spacing:.02em;color:#c3cdee;text-shadow:0 0 6px #000,0 0 14px #000,0 0 2px #000;transition:opacity .3s}
+.lab.dom{font:600 12px var(--sans);letter-spacing:.3em;text-transform:uppercase;text-align:center}
+.lab.dom small{display:block;font:400 9.5px var(--mono);letter-spacing:.18em;color:var(--mut);margin-top:4px;opacity:.85}
+.lab.cours{font:600 12.5px var(--sans);color:#1a1200;background:linear-gradient(90deg,#ffe08a,#ffb347);padding:3px 11px 3px 9px;border-radius:999px;text-shadow:none;box-shadow:0 0 0 1px rgba(255,230,160,.6),0 0 22px rgba(255,190,80,.75)}
+.lab.cours::before{content:"◎ "}
+.lab.sub{font:500 10.5px var(--sans);letter-spacing:.2em;text-transform:uppercase}
+.lab.sub::before{content:"✧ "}
+.hud{position:fixed;z-index:5;transition:opacity 1.3s ease,transform 1.3s cubic-bezier(.2,.8,.2,1)}
+body.pre .hud{opacity:0}
+body.pre #left{transform:translateX(-40px)}
+body.pre #right{transform:translateX(40px)}
+body.pre #bottom{transform:translate(-50%,40px)}
+body.pre #stats{transform:translateY(-20px)}
+.panel{position:relative;background:linear-gradient(165deg,rgba(18,28,58,.6),rgba(5,8,20,.52));border:1px solid var(--edge);border-radius:14px;backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);padding:15px 16px;box-shadow:0 14px 44px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05)}
+.panel::before,.panel::after{content:"";position:absolute;width:14px;height:14px;border:1.5px solid var(--edge2);pointer-events:none}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-top-left-radius:14px}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bottom-right-radius:14px}
+.panel h3{display:flex;align-items:center;gap:10px;margin:0 0 11px;font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--mut)}
+.panel h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--edge2),transparent)}
+#brand{top:22px;left:26px}
+#brand .w{font:500 26px var(--sans);letter-spacing:.55em;color:var(--txt);text-shadow:0 0 18px rgba(94,231,255,.35)}
+#brand .w span{color:var(--cyan);text-shadow:0 0 14px var(--cyan)}
+#brand .s{font:400 10.5px var(--mono);color:var(--mut);letter-spacing:.12em;margin-top:6px}
+#now{left:50%;top:26px;transform:translateX(-50%);font:500 11px var(--mono);letter-spacing:.24em;color:var(--gold);text-transform:uppercase;text-shadow:0 0 14px rgba(255,207,92,.8);white-space:nowrap;display:flex;align-items:center;gap:10px}
+#now::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+#stats{top:22px;right:26px;display:flex;gap:26px}
+.st{font:400 10px var(--mono);letter-spacing:.16em;color:var(--mut);text-transform:uppercase;text-align:right}
+.st b{display:block;font:500 26px var(--sans);color:var(--txt);letter-spacing:0;text-shadow:0 0 16px rgba(140,190,255,.35)}
+.st.g b{color:var(--gold);text-shadow:0 0 16px rgba(255,207,92,.55)}
+#left{top:112px;left:26px;width:300px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 200px);overflow:auto}
+#right{top:112px;right:26px;width:300px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 200px);overflow:auto}
+#left::-webkit-scrollbar,#right::-webkit-scrollbar{width:0}
+.panel.now{border-color:rgba(255,207,92,.5);background:linear-gradient(165deg,rgba(60,44,10,.42),rgba(8,8,18,.55));box-shadow:0 0 34px rgba(255,190,80,.18),inset 0 0 26px rgba(255,207,92,.06),0 14px 44px rgba(0,0,0,.4)}
+.panel.now::before,.panel.now::after{border-color:rgba(255,215,120,.85)}
+.panel.now h3{color:var(--gold)}
+.panel.now h3::after{background:linear-gradient(90deg,rgba(255,207,92,.6),transparent)}
+.wk{display:flex;align-items:center;gap:11px;padding:8px 7px;border-radius:9px;cursor:pointer;font-size:13.5px;transition:background .2s,transform .2s}
+.wk:hover{background:rgba(255,207,92,.09);transform:translateX(3px)}
+.wk i{width:10px;height:10px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 10px var(--gold);flex:none;animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 18px var(--gold),0 0 4px var(--gold) inset}}
+.wk small{display:block;color:var(--dim);font:400 10.5px var(--mono);margin-top:2px}
+.wk small b{color:var(--gold);font-weight:500}
+.big{font:600 30px var(--sans)}.big small{font:400 12px var(--mono);color:var(--mut);margin-left:6px}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.07);margin:10px 0 6px;overflow:hidden}
+.bar div{height:100%;border-radius:3px;background:linear-gradient(90deg,#3a7bff,var(--cyan));box-shadow:0 0 12px var(--cyan);transition:width 1.6s cubic-bezier(.2,.8,.2,1)}
+.bar.g div{background:linear-gradient(90deg,#ff9f43,var(--gold));box-shadow:0 0 12px var(--gold)}
+.row{display:flex;justify-content:space-between;font:400 11px var(--mono);color:var(--mut)}
+.it{font-size:13px;padding:6px 0;display:flex;gap:10px;align-items:baseline;border-top:1px solid rgba(255,255,255,.05)}
+.it:first-of-type{border-top:0}
+.tg{font:400 10px var(--mono);color:var(--dim);white-space:nowrap;margin-left:auto}
+.d{font:400 10.5px var(--mono);color:var(--dim);white-space:nowrap}
+.mood{font-size:13px;line-height:1.5}
+.env{font-size:13px;color:var(--ok);padding:3px 0}
+.env::before{content:"✦ ";opacity:.7}
+#bottom{left:50%;bottom:22px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 52px)}
+.chip{background:rgba(8,12,28,.6);border:1px solid var(--edge);color:var(--mut);border-radius:999px;padding:6px 12px;font:500 11.5px var(--sans);cursor:pointer;display:flex;gap:7px;align-items:center;backdrop-filter:blur(10px);transition:all .2s}
+.chip:hover{color:var(--txt);border-color:var(--edge2)}
+.chip i{width:7px;height:7px;border-radius:50%}
+.chip.on{color:var(--txt);border-color:rgba(160,190,255,.5);background:var(--glass2)}
+.chip.act{color:var(--cyan);border-color:rgba(94,231,255,.4)}
+.chip.cf{color:var(--gold);border-color:rgba(255,207,92,.55)}
+.chip.cf.on{background:rgba(255,207,92,.15);box-shadow:0 0 16px rgba(255,207,92,.35)}
+#legend{left:26px;bottom:24px;display:flex;gap:16px;font:400 11px var(--mono);color:var(--mut)}
+#legend span{display:flex;align-items:center;gap:7px}
+.lg1{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 10px #9cf}
+.lg2{width:7px;height:7px;border-radius:50%;background:#9ab}
+.lg3{width:10px;height:10px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 8px var(--gold)}
+.lg4{width:4px;height:4px;border-radius:50%;background:#789}
+#card{left:50%;top:70px;transform:translateX(-50%) translateY(-10px);opacity:0;transition:.3s;pointer-events:none;min-width:330px;max-width:540px}
+#card.on{opacity:1;transform:translateX(-50%)}
+#card .t{font:600 17px var(--sans)}
+#card .m{font:400 11px var(--mono);color:var(--mut);margin-top:6px;letter-spacing:.04em}
+.badge{display:inline-block;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid;margin-left:8px;vertical-align:3px}
+.b-maitrise{color:#bfe9ff;border-color:rgba(191,233,255,.4)}
+.b-acquis{color:#9fb3d9;border-color:rgba(159,179,217,.35)}
+.b-en_cours{color:var(--gold);border-color:rgba(255,207,92,.5);box-shadow:0 0 10px rgba(255,207,92,.25)}
+.b-interet{color:#8a96b5;border-color:rgba(138,150,181,.3)}
+#card ul{margin:8px 0 0;padding-left:16px;font-size:12.5px;color:var(--mut)}
+#intro{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;transition:opacity 1.6s ease}
+#intro .w{font:300 68px var(--sans);letter-spacing:1.1em;padding-left:1.1em;color:#fff;text-shadow:0 0 30px rgba(94,231,255,.9),0 0 90px rgba(94,231,255,.45);animation:iw 2.8s cubic-bezier(.2,.8,.2,1) both}
+#intro .w span{color:var(--cyan)}
+#intro .s{font:400 11px var(--mono);letter-spacing:.55em;padding-left:.55em;color:var(--mut);margin-top:22px;text-transform:uppercase;animation:is 2s .6s both}
+@keyframes iw{from{letter-spacing:2.4em;opacity:0;filter:blur(14px)}to{letter-spacing:1.1em;opacity:1;filter:blur(0)}}
+@keyframes is{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#intro.out{opacity:0}
+body.lite .panel,body.lite .chip{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(8,12,26,.9)}
+body.lite .panel.now{background:rgba(30,24,8,.92)}
+body.lite .wk i,body.lite #now::before{animation:none}
+body.lite .lab{text-shadow:0 0 4px #000,0 0 2px #000}
+@media (max-width:1100px){#right{display:none}}
+body.mob #stats,body.mob #legend,body.mob #right{display:none}
+body.mob #brand{top:14px;left:max(16px,env(safe-area-inset-left,0px))}
+body.mob #brand .w{font-size:20px;letter-spacing:.45em}
+body.mob #brand .s{font-size:9px}
+body.mob #now{display:none}
+body.mob #bottom{top:62px;bottom:auto;left:0;right:0;transform:none;max-width:none;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;padding:4px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));scrollbar-width:none}
+body.mob #bottom::-webkit-scrollbar{display:none}
+body.mob .chip{flex:none;padding:7px 12px;font-size:12px}
+body.mob #card{top:108px;left:12px;right:12px;min-width:0;max-width:none;transform:translateY(-10px)}
+body.mob #card.on{transform:none}
+body.mob #left{top:auto;left:0;right:0;bottom:0;width:auto;max-height:38vh;gap:10px;padding:0 max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(2,3,10,0),rgba(2,3,10,.85) 26px);transition:max-height .35s ease,transform 1.3s cubic-bezier(.2,.8,.2,1),opacity 1.3s}
+body.mob #left.min{max-height:calc(150px + env(safe-area-inset-bottom,0px));overflow:hidden}
+body.mob.pre #left{transform:translateY(60px)}
+body.mob #grip{position:sticky;top:0;z-index:2;display:flex;justify-content:center;align-items:center;height:30px;flex:none;border:0;background:transparent;cursor:pointer;padding:0}
+body.mob #grip span{width:44px;height:5px;border-radius:3px;background:rgba(200,215,255,.45)}
+body.mob .panel{padding:12px 14px}
+body.mob .mstats{display:flex;justify-content:space-between;padding:10px 14px}
+body.mob .mstats .st{text-align:center;font-size:8.5px;letter-spacing:.1em}
+body.mob .mstats .st b{font-size:19px}
+body.mob .wk{font-size:13px;padding:7px 4px}
+body.mob .lab{font-size:10px}
+body.mob .lab.dom{font-size:11.5px;letter-spacing:.2em;font-weight:700}
+body.mob .lab.dom small{font-size:8.5px;color:#aab6d8}
+body.mob .lab.cours{font-size:10.5px;padding:2px 8px 2px 7px}
+.mstats{display:none}
+#grip{display:none}
+.panel.fold h3{cursor:pointer;margin:0;user-select:none;-webkit-user-select:none;padding:2px 0}
+.panel.fold.open h3{margin-bottom:11px}
+.panel.fold:not(.open)>:not(h3){display:none}
+.panel.fold{padding-top:12px;padding-bottom:12px;transition:border-color .2s}
+.panel.fold:not(.open):hover{border-color:var(--edge2)}
+.panel h3 .chev{display:inline-block;transition:transform .2s;font-size:11px;color:var(--mut)}
+.panel.now h3 .chev{color:var(--gold)}
+.panel.fold.open h3 .chev{transform:rotate(90deg)}
+.panel h3::after{order:1}
+.fsum{order:2;font:500 11.5px var(--mono);letter-spacing:.02em;color:var(--txt);text-transform:none;white-space:nowrap;max-width:55%;overflow:hidden;text-overflow:ellipsis}
+.panel.now .fsum{color:var(--gold)}
+.panel h3:focus-visible{outline:1px solid var(--edge2);outline-offset:4px;border-radius:4px}
+@media (max-width:760px){#intro .w{font-size:40px}}
+</style>
+<style>
+/* ================= Application : navigation, vues, formulaires ================= */
+:root{--s-maitrise:#bfe9ff;--s-acquis:#7f9be0;--s-en_cours:#ffcf5c;--s-interet:#6b7899;--danger:#ff7a8a}
+#nav{position:fixed;z-index:16;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(8,12,28,.62);border:1px solid var(--edge);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity 1.3s}
+body.pre #nav{opacity:0;pointer-events:none}
+#nav button{all:unset;cursor:pointer;display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;font:500 12.5px var(--sans);color:var(--mut);letter-spacing:.02em;transition:color .2s,background .2s}
+#nav button svg{width:15px;height:15px;flex:none}
+#nav button:hover{color:var(--txt)}
+#nav button.on{color:#06101e;background:linear-gradient(90deg,#9fefff,var(--cyan));box-shadow:0 0 18px rgba(94,231,255,.45)}
+#nav button:focus-visible{outline:1px solid var(--cyan);outline-offset:2px}
+#now{top:74px}
+#card{top:108px}
+@media (max-width:1320px){body:not(.mob) #stats{display:none}}
+body.inview .hud,body.inview #labels{opacity:0!important;pointer-events:none!important}
+body.inview canvas{filter:blur(3px) brightness(.55)}
+
+#view{position:fixed;inset:0;z-index:12;overflow-y:auto;overscroll-behavior:contain;background:radial-gradient(1200px 700px at 50% -10%,rgba(40,70,140,.22),transparent 60%),rgba(2,3,10,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:84px 26px 60px;opacity:0;pointer-events:none;transition:opacity .35s}
+#view.on{opacity:1;pointer-events:auto}
+.vw{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.vh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:6px 0 2px}
+.vh h1{margin:0;font:500 26px var(--sans);letter-spacing:.02em}
+.vh p{margin:6px 0 0;color:var(--mut);font-size:13px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.tile{padding:14px 16px}
+.tile .k{font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+.tile .v{font:500 28px var(--sans);margin-top:6px;font-variant-numeric:tabular-nums}
+.tile .v small{font:400 12px var(--mono);color:var(--mut);margin-left:4px}
+.tile .x{font:400 11px var(--mono);color:var(--dim);margin-top:4px}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;border-radius:10px;font:500 12.5px var(--sans);color:var(--txt);border:1px solid var(--edge2);background:rgba(20,32,66,.6);transition:background .2s,border-color .2s;white-space:nowrap}
+.btn:hover{background:rgba(40,60,110,.7)}
+.btn.pri{color:#06101e;background:linear-gradient(90deg,#9fefff,var(--cyan));border-color:transparent;font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.gh{border-color:var(--edge);background:transparent;color:var(--mut)}
+.btn.gh:hover{color:var(--txt)}
+.btn.dg{color:var(--danger);border-color:rgba(255,122,138,.4);background:transparent}
+.btn:focus-visible{outline:1px solid var(--cyan);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs .chip.on{color:var(--cyan);border-color:rgba(94,231,255,.5)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.inp,.sel,textarea.inp{box-sizing:border-box;background:rgba(6,10,24,.7);border:1px solid var(--edge);color:var(--txt);border-radius:10px;padding:9px 12px;font:400 13.5px var(--sans);outline:none;min-width:0}
+.inp:focus,.sel:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(94,231,255,.12)}
+.sel option{background:#0b1226}
+.search{flex:1;min-width:200px}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:10px 8px;border-top:1px solid rgba(255,255,255,.05);cursor:pointer;border-radius:8px;transition:background .15s}
+.li:first-child{border-top:0}
+.li:hover{background:rgba(120,160,255,.06)}
+.li .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.li .tx{flex:1;min-width:0}
+.li .tx b{display:block;font-weight:500;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .tx span{display:block;font:400 10.5px var(--mono);color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{font:500 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;flex:none}
+.grp{font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--mut);margin:14px 0 4px;display:flex;align-items:center;gap:8px}
+.grp:first-child{margin-top:0}
+.grp i{width:8px;height:8px;border-radius:50%}
+.empty{color:var(--dim);font-size:13px;padding:18px 4px;text-align:center}
+.dist .r{display:grid;grid-template-columns:150px 1fr 34px;gap:10px;align-items:center;padding:4px 0;font-size:12.5px;cursor:pointer}
+.dist .r:hover .nm{color:var(--txt)}
+.dist .nm{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dist .bars{display:flex;height:9px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.04)}
+.dist .bars i{display:block;height:100%}
+.dist .bars i+i{margin-left:2px}
+.dist .n{font:400 11px var(--mono);color:var(--mut);text-align:right}
+.lgd{display:flex;gap:14px;flex-wrap:wrap;font:400 11px var(--mono);color:var(--mut)}
+.lgd span{display:flex;align-items:center;gap:6px}
+.lgd i{width:9px;height:9px;border-radius:2px}
+.obj .t{font:500 15px var(--sans)}
+.obj .m{font:400 11px var(--mono);color:var(--mut);margin-top:5px;line-height:1.6}
+.chk{display:flex;align-items:center;gap:10px;padding:7px 2px;font-size:13px;cursor:pointer;user-select:none}
+.chk input{appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--edge2);margin:0;flex:none;display:grid;place-items:center;cursor:pointer}
+.chk input:checked{background:var(--ok);border-color:var(--ok)}
+.chk input:checked::after{content:"";width:8px;height:4px;border:2px solid #06101e;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.chk input:checked+span{color:var(--dim);text-decoration:line-through}
+.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.kc{padding:11px 12px;border-radius:10px;background:rgba(10,16,36,.55);border:1px solid var(--edge);margin-top:8px}
+.kc b{font-weight:500;font-size:13.5px;display:block}
+.kc .sel{margin-top:8px;padding:5px 8px;font-size:12px;width:100%}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font:400 10.5px var(--mono);fill:var(--mut)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{font:500 9.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);text-align:left;padding:6px 8px;border-bottom:1px solid var(--edge)}
+.tbl td{padding:8px;border-bottom:1px solid rgba(255,255,255,.05);font-variant-numeric:tabular-nums;vertical-align:top}
+.tbl td.n{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.tblw{overflow-x:auto}
+.ul{margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#cdd6f2}
+.ul.ok li::marker{color:var(--ok)}
+.ul.wa li::marker{color:var(--gold)}
+.tl{position:relative;padding-left:18px}
+.tl::before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:1px;background:linear-gradient(var(--edge2),transparent)}
+.tl .day{font:500 10.5px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin:16px 0 6px;position:relative}
+.tl .day:first-child{margin-top:0}
+.tl .day::before{content:"";position:absolute;left:-18px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--bg);border:1.5px solid var(--cyan)}
+.tl .ev{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13px;line-height:1.5}
+.tl .ev .pill{font-size:8.5px;padding:2px 7px}
+.compose{display:grid;grid-template-columns:1fr auto;gap:8px}
+.wkg{display:flex;gap:6px;align-items:flex-end;height:90px;margin-top:6px}
+.wkg div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.wkg i{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--gold),#ff9f43);min-height:2px}
+.wkg i.lo{background:rgba(255,207,92,.25)}
+.wkg span{font:400 9.5px var(--mono);color:var(--dim)}
+
+#sheet{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(1,2,8,.6);opacity:0;pointer-events:none;transition:opacity .25s;padding:20px}
+#sheet.on{opacity:1;pointer-events:auto}
+#sheet .panel{width:100%;max-width:560px;max-height:calc(100vh - 40px);overflow-y:auto;background:linear-gradient(165deg,rgba(20,30,62,.96),rgba(6,9,22,.97));transform:translateY(12px);transition:transform .25s}
+#sheet.on .panel{transform:none}
+.fm{display:flex;flex-direction:column;gap:12px}
+.fm label{display:flex;flex-direction:column;gap:6px;font:500 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+.fm .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fm .act{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap}
+.fm .hint{font:400 11px var(--sans);color:var(--dim);letter-spacing:0;text-transform:none}
+.fm textarea{resize:vertical;min-height:72px}
+.det .t{font:600 19px var(--sans);line-height:1.3}
+.det .m{font:400 11px var(--mono);color:var(--mut);margin-top:8px;line-height:1.7}
+.det .r{font-size:13.5px;line-height:1.6;margin-top:12px}
+.det .lk{display:flex;gap:8px;align-items:baseline;padding:5px 0;font-size:13px;cursor:pointer}
+.det .lk:hover b{color:var(--cyan)}
+.det .lk b{font-weight:500}
+#toast{position:fixed;z-index:40;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:.3s;background:rgba(12,20,44,.95);border:1px solid var(--edge2);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;gap:12px;align-items:center;box-shadow:0 14px 40px rgba(0,0,0,.5);max-width:calc(100vw - 32px)}
+#toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#sync{font:400 10px var(--mono);letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+#sync.ok{color:var(--ok)}
+@media (max-width:900px){.g4,.g6{grid-template-columns:repeat(2,minmax(0,1fr))}.g3,.kb{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.g2{grid-template-columns:minmax(0,1fr)}.dist .r{grid-template-columns:110px 1fr 28px}}
+body.mob #nav{top:auto;bottom:0;left:0;right:0;transform:none;border-radius:0;justify-content:space-around;padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px));background:rgba(4,7,18,.94);border:0;border-top:1px solid var(--edge)}
+body.mob #nav button{flex-direction:column;gap:3px;padding:6px 4px;font-size:10.5px;flex:1;max-width:84px;border-radius:10px}
+body.mob #nav button svg{width:19px;height:19px}
+body.mob #nav button.on{background:rgba(94,231,255,.12);color:var(--cyan);box-shadow:none}
+body.mob #left{bottom:calc(60px + env(safe-area-inset-bottom,0px));padding-bottom:10px}
+body.mob #view{padding:18px max(16px,env(safe-area-inset-left,0px)) calc(90px + env(safe-area-inset-bottom,0px))}
+body.mob .vh h1{font-size:22px}
+body.mob #sheet{align-items:flex-end;padding:0}
+body.mob #sheet .panel{max-width:none;border-radius:16px 16px 0 0;max-height:88vh;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+body.mob #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body.mob .search{min-width:100%}
+</style>
+<script>document.body.classList.add("pre")</script>
+<div id="labels"></div>
+<div id="scan"></div>
+<div id="intro"><div class="w">ORI<span>O</span>N</div><div class="s">carte de tes connaissances</div></div>
+<div class="hud" id="brand"><div class="w">ORI<span>O</span>N</div><div class="s" id="maj">—</div></div>
+<div class="hud" id="now"></div>
+<div class="hud" id="stats"></div>
+<div class="hud" id="left"></div>
+<div class="hud" id="right"></div>
+<div class="hud panel" id="card"></div>
+<div class="hud" id="legend"><span><i class="lg1"></i>maîtrisé</span><span><i class="lg2"></i>acquis</span><span><i class="lg3"></i>en cours</span><span><i class="lg4"></i>intérêt</span></div>
+<div class="hud" id="bottom"></div>
+<script>
+/* ================= Saisies : modifications faites dans l'appli =================
+   Rangées dans la base sous orion/saisies (et en local en secours). Chaque saisie
+   est idempotente : rejouée sur une base qui l'a déjà intégrée, elle ne double rien.
+   Le bilan du soir peut les intégrer puis écrire {json:"[]", vide_avant:<date ISO>}. */
+window.OrionStore = {
+  ops: [], db: null, q: Promise.resolve(), state: 'local',
+  merge(list) {
+    const seen = new Set(this.ops.map(o => o.id));
+    (Array.isArray(list) ? list : []).forEach(o => { if (o && o.id && o.op && !seen.has(o.id)) { seen.add(o.id); this.ops.push(o); } });
+    this.ops.sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+  },
+  readLocal() { try { return JSON.parse(localStorage.getItem('orion-saisies') || '[]'); } catch (e) { return []; } },
+  saveLocal() { try { localStorage.setItem('orion-saisies', JSON.stringify(this.ops)); } catch (e) {} },
+  async load(db, tick) {
+    this.db = db; this.merge(this.readLocal());
+    if (!db) return;
+    try {
+      const s = await Promise.race([db.doc('orion/saisies').get(), tick(2500)]);
+      const d = s && s.exists ? s.data() : null;
+      let remote = [];
+      if (d && typeof d.json === 'string') remote = JSON.parse(d.json);
+      if (d && d.vide_avant) this.ops = this.ops.filter(o => String(o.ts) >= String(d.vide_avant));
+      const before = remote.length; this.merge(remote); this.saveLocal(); this.state = 'ok';
+      if (this.ops.length > before) this.sync();
+    } catch (e) { this.state = 'local'; }
+  },
+  push(op) {
+    op.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    op.ts = new Date().toISOString();
+    this.ops.push(op); this.saveLocal(); return this.sync();
+  },
+  sync() {
+    if (!this.db) return Promise.resolve(false);
+    this.q = this.q.then(() => this.db.doc('orion/saisies').set({json: JSON.stringify(this.ops), maj: new Date().toISOString(), n: this.ops.length})
+      .then(() => { this.state = 'ok'; return true; }, () => { this.state = 'local'; return false; }));
+    return this.q;
+  }
+};
+window.orionApply = function (O, op) {
+  const C = O.connaissances = O.connaissances || [], J = O.journal = O.journal || [];
+  const day = (op.ts || new Date().toISOString()).slice(0, 10);
+  const jn = (type, texte, date) => { date = date || day; if (!J.some(j => j.date === date && j.texte === texte)) J.push({date, type, texte, saisie: true}); };
+  const lien = (a, b, r) => { const L = O.liens = O.liens || []; if (a && b && a !== b && !L.some(l => (l.a === a && l.b === b) || (l.a === b && l.b === a))) L.push({a, b, r: r || 'lié'}); };
+  switch (op.op) {
+    case 'k_add': if (op.k && op.k.t && !C.some(k => k.t === op.k.t)) { C.push({...op.k}); jn('saisie', 'Ajout : ' + op.k.t, op.k.date); } if (op.lien) lien(op.k.t, op.lien.b, op.lien.r); break;
+    case 'k_edit': { const k = C.find(k => k.t === op.t); if (k) { const old = k.t; Object.assign(k, op.patch); if (op.patch.t && op.patch.t !== old) (O.liens || []).forEach(l => { if (l.a === old) l.a = op.patch.t; if (l.b === old) l.b = op.patch.t; }); } if (op.lien) lien((op.patch && op.patch.t) || op.t, op.lien.b, op.lien.r); break; }
+    case 'k_del': O.connaissances = C.filter(k => k.t !== op.t); O.liens = (O.liens || []).filter(l => l.a !== op.t && l.b !== op.t); break;
+    case 'etape': { const o = (O.objectifs || []).find(o => o.t === op.obj), e = o && (o.etapes || []).find(e => e.n === op.n); if (e) { e.fait = !!op.fait; if (op.fait) jn('objectif', 'Étape faite : ' + e.t); } break; }
+    case 'obj_add': { const L = O.objectifs = O.objectifs || []; if (op.o && op.o.t && !L.some(o => o.t === op.o.t)) { L.push({...op.o}); jn('objectif', 'Nouvel objectif : ' + op.o.t); } break; }
+    case 'projet': { const P = O.projets = O.projets || [], p = P.find(p => p.t === op.t); if (p) p.statut = op.statut; else { P.push({t: op.t, statut: op.statut}); jn('saisie', 'Nouveau projet : ' + op.t); } break; }
+    case 'humeur': { const H = O.humeurs = O.humeurs || []; if (!H.some(h => h.date === op.date && h.t === op.t)) H.push({date: op.date, t: op.t}); break; }
+    case 'envie': { const H = O.envies = O.envies || []; if (!H.some(h => h.t === op.t)) H.push({date: op.date, t: op.t}); break; }
+    case 'note': jn(op.type || 'perso', op.texte, op.date); break;
+    case 'course': { const CO = O.course = O.course || {}; const S = CO.sorties = CO.sorties || []; if (op.s && !S.some(s => s.date === op.s.date && +s.km === +op.s.km)) { S.push({...op.s}); S.sort((a, b) => String(a.date).localeCompare(String(b.date))); jn('course', `Sortie : ${String(op.s.km).replace('.', ',')} km en ${op.s.duree}${op.s.allure ? ' (' + op.s.allure + '/km)' : ''}`, op.s.date); } break; }
+    case 'piano': { const P = O.piano = O.piano || {}; const S = P.seances = P.seances || []; if (op.s && !S.some(s => s.date === op.s.date && s.contenu === op.s.contenu)) { S.push({...op.s}); S.sort((a, b) => String(a.date).localeCompare(String(b.date))); jn('piano', `Séance ${op.s.duree_min} min : ${op.s.contenu}`, op.s.date); }
+      if (op.progression != null && P.morceau_en_cours) { P.morceau_en_cours.progression = op.progression; if (op.repere) P.morceau_en_cours.repere = op.repere; } break; }
+    case 'echecs': { const E = O.echecs = O.echecs || {}; const H = E.historique = E.historique || []; let h = H.find(h => h.date === op.date);
+      if (!h) { h = {date: op.date}; H.push(h); H.sort((a, b) => String(a.date).localeCompare(String(b.date))); }
+      if (op.rapide) h.rapide = op.rapide; if (op.blitz) h.blitz = op.blitz;
+      if (!E.releve || op.date >= E.releve) { E.releve = op.date; E.elo = E.elo || {}; if (op.rapide) E.elo.rapide = op.rapide; if (op.blitz) E.elo.blitz = op.blitz; }
+      jn('echecs', `Relevé manuel : ${op.rapide || '—'} en rapide`, op.date); break; }
+  }
+};
+
+/* ================= Application ================= */
+window.__orionApp = function (O) {
+const S = window.OrionStore;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const fmt = (d, o) => { const x = new Date(d); return isNaN(x) || !/\d{4}-\d{2}-\d{2}/.test(d || '') ? (d || '') : x.toLocaleDateString('fr-FR', o || {day: 'numeric', month: 'short'}); };
+const fmtL = d => fmt(d, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+const today = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const num = v => String(v).replace('.', ',');
+const PAL = ['#4fe3ff', '#a98bff', '#ff9a5c', '#ff5c8a', '#5cf2a8', '#ff7ae0', '#6f9bff', '#f2e05c', '#3fd8c4', '#c49bff', '#ff7b5c', '#9be15d'];
+const ST = {maitrise: 'Maîtrisé', acquis: 'Acquis', en_cours: 'En cours', interet: 'Intérêt'};
+const STC = {maitrise: 'var(--s-maitrise)', acquis: 'var(--s-acquis)', en_cours: 'var(--s-en_cours)', interet: 'var(--s-interet)'};
+const NIV = {maitrise: 3, acquis: 2, en_cours: 1, interet: 1};
+const stat = k => k.statut || ((k.niveau ?? 1) >= 3 ? 'maitrise' : (k.niveau ?? 1) === 2 ? 'acquis' : 'interet');
+const DOMS = () => [...(O.domaines || []).map((d, i) => ({...d, col: PAL[i % PAL.length]})), {id: 'toile', nom: 'Toile extérieure', col: '#9aa6c8'}];
+const dom = id => DOMS().find(d => d.id === id) || {id, nom: id || '—', col: '#9aa6c8'};
+const sub = id => (O.sous_domaines || []).find(s => s.id === id);
+const ICON = {
+  carte: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="2.4"/><circle cx="5" cy="6" r="1.6"/><circle cx="19" cy="7" r="1.6"/><circle cx="17" cy="18" r="1.6"/><circle cx="6" cy="17" r="1.6"/><path d="M6.3 7l4 3.5M17.6 8l-3.8 2.8M15.8 16.8l-2.4-3M7.4 16l2.9-2.4"/></svg>',
+  explorer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>',
+  objectifs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r=".9" fill="currentColor"/></svg>',
+  suivi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/></svg>',
+  journal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+  donnees: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-6"/></svg>'
+};
+const MODE = window.ORION_MODE || 'artifact';
+const TABS = [['carte', 'Carte'], ['explorer', 'Explorer'], ['objectifs', 'Objectifs'], ['suivi', 'Suivi'], ['journal', 'Journal'], ['donnees', 'Données']];
+let tab = 'carte', mapDirty = false;
+const UI = {q: '', d: '', s: '', sort: 'date', suivi: 'echecs', jf: ''};
+try { Object.assign(UI, JSON.parse(localStorage.getItem('orion-ui') || '{}'), {q: ''}); } catch (e) {}
+const saveUI = () => { try { localStorage.setItem('orion-ui', JSON.stringify({...UI, q: ''})); } catch (e) {} };
+
+/* ---------- squelette ---------- */
+const nav = document.createElement('nav'); nav.id = 'nav'; nav.setAttribute('aria-label', 'Navigation');
+nav.innerHTML = TABS.map(([id, t]) => `<button data-tab="${id}" aria-label="${t}">${ICON[id]}<span>${t}</span></button>`).join('');
+document.body.appendChild(nav);
+const view = document.createElement('main'); view.id = 'view'; document.body.appendChild(view);
+const sheet = document.createElement('div'); sheet.id = 'sheet'; sheet.innerHTML = '<div class="panel" role="dialog" aria-modal="true"></div>'; document.body.appendChild(sheet);
+const toastEl = document.createElement('div'); toastEl.id = 'toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl);
+let tT = null;
+function toast(msg, btn, fn) {
+  toastEl.innerHTML = `<span>${esc(msg)}</span>` + (btn ? `<button class="btn pri" id="tbtn">${esc(btn)}</button>` : '');
+  toastEl.classList.add('on'); if (btn) $('tbtn').onclick = () => { toastEl.classList.remove('on'); fn(); };
+  clearTimeout(tT); tT = setTimeout(() => toastEl.classList.remove('on'), btn ? 9000 : 3200);
+}
+nav.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) go(b.dataset.tab); });
+
+function go(t) {
+  tab = t;
+  nav.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.tab === t); b.setAttribute('aria-current', b.dataset.tab === t ? 'page' : 'false'); });
+  const inView = t !== 'carte';
+  document.body.classList.toggle('inview', inView); view.classList.toggle('on', inView);
+  window.__orionPaused = inView;
+  if (inView) { render(); view.scrollTop = 0; }
+  else if (mapDirty) toast('Tes saisies seront visibles sur la carte après rechargement.', 'Recharger', () => location.reload());
+}
+function render() {
+  const R = {explorer: vExplorer, objectifs: vObjectifs, suivi: vSuivi, journal: vJournal, donnees: vDonnees}[tab];
+  if (R) view.innerHTML = `<div class="vw">${R()}</div>`;
+  after();
+}
+const syncTag = () => `<span id="sync" class="${S.state === 'ok' ? 'ok' : ''}">${S.state === 'ok' ? '● synchronisé' : S.db ? '○ en attente de synchro' : '○ enregistré sur cet appareil'}</span>`;
+async function commit(op, msg, dirty) {
+  window.orionApply(O, op); if (dirty) mapDirty = true;
+  if (tab !== 'carte') render();
+  const ok = await S.push(op);
+  const el = $('sync'); if (el) el.outerHTML = syncTag();
+  toast(msg + (S.db && !ok ? ' (synchro différée)' : ''));
+}
+
+/* ---------- graphiques SVG ---------- */
+const CW = () => Math.max(300, Math.min(1080, (view.clientWidth || innerWidth) - (document.body.classList.contains('mob') ? 64 : 110)));
+function lineChart(pts, o = {}) {
+  if (pts.length < 2) return '<div class="empty">Pas encore assez de relevés pour tracer une courbe.</div>';
+  const W = CW(), H = o.h || 240, L = 40, Rr = 14, T = 14, B = 26;
+  const xs = pts.map(p => +new Date(p.x)), x1 = Math.min(...xs), x2 = Math.max(...xs, o.xmax ? +new Date(o.xmax) : 0);
+  const ys = pts.map(p => p.y).concat(o.target != null ? [o.target] : [], o.proj ? o.proj.map(p => p.y) : []);
+  let y1 = Math.min(...ys), y2 = Math.max(...ys); const pad = (y2 - y1) * .12 || 10; y1 = Math.floor((y1 - pad) / 10) * 10; y2 = Math.ceil((y2 + pad) / 10) * 10;
+  const X = v => L + (v - x1) / ((x2 - x1) || 1) * (W - L - Rr), Y = v => T + (1 - (v - y1) / ((y2 - y1) || 1)) * (H - T - B);
+  const step = Math.max(1, Math.ceil((y2 - y1) / 4 / 10) * 10);
+  let g = '';
+  for (let v = Math.ceil(y1 / step) * step; v <= y2; v += step) g += `<line x1="${L}" x2="${W - Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${L - 6}" y="${Y(v) + 3.5}" text-anchor="end">${v}</text>`;
+  const xt = [x1, (x1 + x2) / 2, x2].map((v, i) => `<text x="${X(v)}" y="${H - 6}" text-anchor="${['start', 'middle', 'end'][i]}">${fmt(new Date(v).toISOString().slice(0, 10))}</text>`).join('');
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + X(+new Date(p.x)).toFixed(1) + ' ' + Y(p.y).toFixed(1)).join(' ');
+  const area = path + ` L${X(+new Date(pts[pts.length - 1].x)).toFixed(1)} ${H - B} L${X(+new Date(pts[0].x)).toFixed(1)} ${H - B} Z`;
+  const tgt = o.target != null ? `<line x1="${L}" x2="${W - Rr}" y1="${Y(o.target)}" y2="${Y(o.target)}" stroke="var(--gold)" stroke-dasharray="4 5" opacity=".8"/><text x="${W - Rr}" y="${Y(o.target) - 6}" text-anchor="end" style="fill:var(--gold)">objectif ${o.target}</text>` : '';
+  const proj = o.proj ? `<line x1="${X(+new Date(o.proj[0].x))}" y1="${Y(o.proj[0].y)}" x2="${X(+new Date(o.proj[1].x))}" y2="${Y(o.proj[1].y)}" stroke="var(--mut)" stroke-dasharray="2 5" opacity=".7"/>` : '';
+  const last = pts[pts.length - 1];
+  const dots = pts.map(p => `<circle cx="${X(+new Date(p.x))}" cy="${Y(p.y)}" r="${p === last ? 4.5 : 3}" fill="${p === last ? 'var(--cyan)' : '#0a1430'}" stroke="var(--cyan)" stroke-width="1.6"><title>${fmt(p.x)} : ${p.y}</title></circle>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || 'courbe')}"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5ee7ff" stop-opacity=".28"/><stop offset="1" stop-color="#5ee7ff" stop-opacity="0"/></linearGradient></defs>${g}${tgt}${proj}<path d="${area}" fill="url(#ga)"/><path d="${path}" fill="none" stroke="var(--cyan)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${dots}<text x="${X(+new Date(last.x))}" y="${Y(last.y) - 10}" text-anchor="middle" style="fill:var(--txt);font-weight:500">${last.y}</text>${xt}</svg>`;
+}
+function barChart(rows, o = {}) {
+  if (!rows.length) return '<div class="empty">Aucune donnée.</div>';
+  const W = CW(), H = o.h || 220, L = 30, T = 18, B = 26, n = rows.length, bw = Math.min(46, (W - L - 10) / n * .62), gap = (W - L - 10) / n;
+  const ymax = Math.max(o.target || 0, ...rows.map(r => r.y)) * 1.12, Y = v => T + (1 - v / ymax) * (H - T - B);
+  let g = ''; for (let v = 0; v <= ymax; v += o.step || 2) g += `<line x1="${L}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${L - 6}" y="${Y(v) + 3.5}" text-anchor="end">${v}</text>`;
+  const bars = rows.map((r, i) => { const x = L + i * gap + (gap - bw) / 2; return `<rect x="${x}" y="${Y(r.y)}" width="${bw}" height="${H - B - Y(r.y)}" rx="4" fill="${r.c || 'url(#gb)'}"><title>${esc(r.tip || r.y)}</title></rect><text x="${x + bw / 2}" y="${Y(r.y) - 5}" text-anchor="middle" style="fill:var(--txt)">${esc(r.lab ?? r.y)}</text>${(n <= 10 || i % Math.ceil(n / 8) === 0 || i === n - 1) ? `<text x="${x + bw / 2}" y="${H - 7}" text-anchor="middle">${esc(r.x)}</text>` : ''}`; }).join('');
+  const tgt = o.target ? `<line x1="${L}" x2="${W - 10}" y1="${Y(o.target)}" y2="${Y(o.target)}" stroke="var(--gold)" stroke-dasharray="4 5"/><text x="${W - 10}" y="${Y(o.target) - 6}" text-anchor="end" style="fill:var(--gold)">${esc(o.tlab || 'objectif')}</text>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || 'histogramme')}"><defs><linearGradient id="gb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6ff0b0"/><stop offset="1" stop-color="#1fbf7a" stop-opacity=".55"/></linearGradient></defs>${g}${tgt}${bars}</svg>`;
+}
+const bar = (pct, cls = '', style = '') => `<div class="bar ${cls}"><div style="width:${Math.max(2, Math.min(100, pct))}%;${style}"></div></div>`;
+const tile = (k, v, x, col) => `<div class="panel tile"><div class="k">${k}</div><div class="v"${col ? ` style="color:${col}"` : ''}>${v}</div>${x ? `<div class="x">${x}</div>` : ''}</div>`;
+const pill = s => `<span class="pill" style="color:${STC[s]}">${ST[s]}</span>`;
+
+/* ---------- EXPLORER ---------- */
+function vExplorer() {
+  const K = O.connaissances || [], cnt = s => K.filter(k => stat(k) === s).length;
+  const D = DOMS().map(d => ({...d, ks: K.filter(k => k.d === d.id)})).filter(d => d.ks.length).sort((a, b) => b.ks.length - a.ks.length);
+  const mx = Math.max(...D.map(d => d.ks.length), 1);
+  const q = UI.q.trim().toLowerCase();
+  let F = K.filter(k => (!UI.d || k.d === UI.d) && (!UI.s || stat(k) === UI.s) && (!q || (k.t + ' ' + (k.resume || '') + ' ' + (k.src || '') + ' ' + (sub(k.s)?.nom || '')).toLowerCase().includes(q)));
+  const sorts = {date: (a, b) => String(b.date || '').localeCompare(String(a.date || '')), nom: (a, b) => a.t.localeCompare(b.t, 'fr'), niveau: (a, b) => (NIV[stat(b)] - NIV[stat(a)]) || a.t.localeCompare(b.t, 'fr'), domaine: (a, b) => dom(a.d).nom.localeCompare(dom(b.d).nom, 'fr') || String(a.s || '').localeCompare(String(b.s || '')) || a.t.localeCompare(b.t, 'fr')};
+  F = F.slice().sort(sorts[UI.sort] || sorts.date);
+  const row = k => { const d = dom(k.d), s = stat(k), sd = sub(k.s); return `<div class="li" data-a="open" data-t="${esc(k.t)}" tabindex="0"><i class="dot" style="background:${d.col};box-shadow:0 0 8px ${d.col}"></i><div class="tx"><b>${esc(k.t)}</b><span>${esc(d.nom)}${sd ? ' · ' + esc(sd.nom) : ''} · ${esc(fmt(k.date))}${k.resume ? ' · ' + esc(k.resume) : ''}</span></div>${pill(s)}</div>`; };
+  let list = '';
+  if (UI.sort === 'domaine') { let cur = null; F.forEach(k => { if (k.d !== cur) { cur = k.d; const d = dom(cur); list += `<div class="grp"><i style="background:${d.col}"></i>${esc(d.nom)}</div>`; } list += row(k); }); }
+  else list = F.map(row).join('');
+  return `<div class="vh"><div><h1>Explorer</h1><p>${K.length} connaissances · ${(O.liens || []).length} liens · mise à jour ${esc(fmt(O.maj, {day: 'numeric', month: 'long'}))}</p></div><div class="tools">${syncTag()}<button class="btn pri" data-a="kform">＋ Ajouter</button></div></div>
+  <div class="grid g4">${tile('Maîtrisé', cnt('maitrise'), 'niveau 3', 'var(--s-maitrise)')}${tile('Acquis', cnt('acquis'), 'niveau 2')}${tile('En cours', cnt('en_cours'), 'travaillé en ce moment', 'var(--gold)')}${tile('Intérêts', cnt('interet'), 'à explorer')}</div>
+  <div class="grid g2">
+    <div class="panel"><h3>Répartition par domaine</h3><div class="lgd" style="margin-bottom:10px">${Object.keys(ST).map(s => `<span><i style="background:${STC[s]}"></i>${ST[s]}</span>`).join('')}</div><div class="dist">${D.map(d => `<div class="r" data-a="fdom" data-d="${d.id}" title="Filtrer sur ${esc(d.nom)}"><span class="nm">${esc(d.nom)}</span><div class="bars" style="width:${d.ks.length / mx * 100}%">${Object.keys(ST).map(s => { const n = d.ks.filter(k => stat(k) === s).length; return n ? `<i style="flex:${n};background:${STC[s]}" title="${ST[s]} : ${n}"></i>` : ''; }).join('')}</div><span class="n">${d.ks.length}</span></div>`).join('')}</div></div>
+    <div class="panel"><h3>Activité récente</h3>${activity(K)}</div>
+  </div>
+  <div class="panel"><div class="tools" style="margin-bottom:12px">
+    <input class="inp search" id="q" type="search" placeholder="Rechercher un sujet, un résumé, une source…" value="${esc(UI.q)}" aria-label="Rechercher">
+    <select class="sel" id="fd" aria-label="Domaine"><option value="">Tous les domaines</option>${DOMS().map(d => `<option value="${d.id}"${UI.d === d.id ? ' selected' : ''}>${esc(d.nom)}</option>`).join('')}</select>
+    <select class="sel" id="fs" aria-label="Statut"><option value="">Tous les statuts</option>${Object.keys(ST).map(s => `<option value="${s}"${UI.s === s ? ' selected' : ''}>${ST[s]}</option>`).join('')}</select>
+    <select class="sel" id="fo" aria-label="Tri">${[['date', 'Plus récents'], ['nom', 'A → Z'], ['niveau', 'Niveau'], ['domaine', 'Par domaine']].map(([v, t]) => `<option value="${v}"${UI.sort === v ? ' selected' : ''}>${t}</option>`).join('')}</select>
+  </div><div class="row" style="margin-bottom:6px"><span>${F.length} résultat${F.length > 1 ? 's' : ''}</span>${UI.d || UI.s || q ? '<span data-a="freset" style="cursor:pointer;color:var(--cyan)">effacer les filtres</span>' : ''}</div>
+  <div class="list" id="klist">${list || '<div class="empty">Rien ne correspond à ces filtres.</div>'}</div></div>`;
+}
+function activity(K) {
+  const by = {}; K.forEach(k => { if (/\d{4}-\d{2}-\d{2}/.test(k.date || '')) by[k.date] = (by[k.date] || 0) + 1; });
+  (O.journal || []).forEach(j => { if (/\d{4}-\d{2}-\d{2}/.test(j.date || '')) by[j.date] = (by[j.date] || 0) + .5; });
+  const end = new Date(today()), days = [];
+  for (let i = 34; i >= 0; i--) { const d = new Date(end - i * 864e5).toISOString().slice(0, 10); days.push([d, by[d] || 0]); }
+  const mx = Math.max(1, ...days.map(d => d[1]));
+  const cells = days.map(([d, v]) => `<i title="${fmt(d)} : ${Math.round(v * 2) / 2}" style="aspect-ratio:1;border-radius:4px;background:${v ? `rgba(94,231,255,${.18 + .82 * v / mx})` : 'rgba(255,255,255,.05)'}"></i>`).join('');
+  const recent = K.filter(k => k.date).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 4);
+  return `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:260px">${cells}</div><div class="row" style="max-width:260px;margin-top:6px"><span>5 sem.</span><span>aujourd'hui</span></div>
+  <div style="margin-top:12px">${recent.map(k => `<div class="it" data-a="open" data-t="${esc(k.t)}" style="cursor:pointer"><span>${esc(k.t)}</span><span class="tg">${esc(fmt(k.date))}</span></div>`).join('')}</div>`;
+}
+function kDetail(t) {
+  const k = (O.connaissances || []).find(k => k.t === t); if (!k) return;
+  const d = dom(k.d), sd = sub(k.s), s = stat(k);
+  const L = (O.liens || []).filter(l => l.a === k.t || l.b === k.t).map(l => ({t: l.a === k.t ? l.b : l.a, r: l.r}));
+  const vis = (O.visionnages || []).filter(v => v.domaine === k.d && (k.src === 'visionnages' || s === 'interet')).slice(-5);
+  openSheet(`<div class="det"><div class="t">${esc(k.t)}</div>
+    <div class="m"><span style="color:${d.col}">● ${esc(d.nom)}</span>${sd ? ' · ' + esc(sd.nom) : ''} · ${pill(s)}<br>source : ${esc(k.src || '—')} · ${esc(fmtL(k.date))}</div>
+    ${k.resume ? `<div class="r">${esc(k.resume)}</div>` : ''}
+    ${L.length ? `<h3 style="margin-top:16px">Relié à · ${L.length}</h3>${L.map(l => `<div class="lk" data-a="open" data-t="${esc(l.t)}"><b>${esc(l.t)}</b><span class="d">· ${esc(l.r || '')}</span></div>`).join('')}` : ''}
+    ${vis.length ? `<h3 style="margin-top:16px">Visionnages liés</h3><ul class="ul">${vis.map(v => `<li>${esc(v.titre)} <span class="d">· ${esc(v.type || '')}</span></li>`).join('')}</ul>` : ''}
+    <div class="fm"><div class="act" style="margin-top:18px"><button class="btn dg" data-a="kdel" data-t="${esc(k.t)}">Supprimer</button><span style="flex:1"></span><button class="btn" data-a="kform" data-t="${esc(k.t)}">Modifier</button>${k.d !== 'toile' ? `<button class="btn pri" data-a="kmap" data-t="${esc(k.t)}">Voir sur la carte</button>` : ''}</div></div></div>`);
+}
+function kForm(t) {
+  const k = t ? (O.connaissances || []).find(k => k.t === t) : null, s0 = k ? stat(k) : 'interet', d0 = k ? k.d : (UI.d || (O.domaines || [])[0]?.id);
+  const subOpts = d => `<option value="">— aucun —</option>` + (O.sous_domaines || []).filter(s => s.d === d).map(s => `<option value="${s.id}"${k && k.s === s.id ? ' selected' : ''}>${esc(s.nom)}</option>`).join('');
+  openSheet(`<h3>${k ? 'Modifier' : 'Nouvelle connaissance'}</h3><form class="fm" id="kf">
+    <label>Intitulé<input class="inp" name="t" required maxlength="120" value="${esc(k ? k.t : '')}" placeholder="Ex. Défense française (avec les Noirs)"></label>
+    <div class="row2"><label>Domaine<select class="sel" name="d" id="kfd">${DOMS().map(d => `<option value="${d.id}"${d0 === d.id ? ' selected' : ''}>${esc(d.nom)}</option>`).join('')}</select></label>
+    <label>Groupe<select class="sel" name="s" id="kfs">${subOpts(d0)}</select></label></div>
+    <label>Statut<select class="sel" name="statut">${Object.keys(ST).map(s => `<option value="${s}"${s0 === s ? ' selected' : ''}>${ST[s]}</option>`).join('')}</select></label>
+    <label>Résumé<textarea class="inp" name="resume" maxlength="600" placeholder="Où tu en es, ce qu'il faut retenir…">${esc(k ? k.resume || '' : '')}</textarea></label>
+    <div class="row2"><label>Relier à<input class="inp" name="lb" list="kall" placeholder="Autre sujet (facultatif)"></label><label>Relation<input class="inp" name="lr" placeholder="Ex. pratique ↔ écoute"></label></div>
+    <datalist id="kall">${(O.connaissances || []).filter(x => x !== k).map(x => `<option value="${esc(x.t)}">`).join('')}</datalist>
+    <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">${k ? 'Enregistrer' : 'Ajouter'}</button></div></form>`);
+  $('kfd').onchange = e => $('kfs').innerHTML = subOpts(e.target.value);
+  $('kf').onsubmit = e => {
+    e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); const T = f.t.trim(); if (!T) return;
+    if ((O.connaissances || []).some(x => x.t === T && x !== k)) { toast('Ce sujet existe déjà.'); return; }
+    const lb = f.lb.trim(), lien = lb && (O.connaissances || []).some(x => x.t === lb) ? {b: lb, r: f.lr.trim() || 'lié'} : null;
+    const v = {t: T, d: f.d, statut: f.statut, niveau: NIV[f.statut], resume: f.resume.trim() || null, s: f.s || null};
+    closeSheet();
+    if (k) { v.date = today(); commit({op: 'k_edit', t: k.t, patch: v, lien}, 'Modifié : ' + T, true).then(() => kDetail(T)); }
+    else commit({op: 'k_add', k: {...v, src: 'saisie Orion', date: today()}, lien}, 'Ajouté : ' + T, true);
+  };
+}
+
+/* ---------- OBJECTIFS ---------- */
+const PSTAT = ['en cours', 'planifié', 'à confirmer', 'projet', 'envie', 'terminé'];
+const pcol = s => /termin/.test(s) ? 'done' : /en cours/.test(s) ? 'now' : 'next';
+function vObjectifs() {
+  const E = O.echecs || {}, CO = O.course || {}, PI = O.piano || {};
+  const cards = (O.objectifs || []).map(o => {
+    let body = '', d = dom(o.domaine);
+    if (o.cible && o.domaine === 'echecs' && E.elo) {
+      const cur = E.elo.rapide, pct = (cur - o.depart) / (o.cible - o.depart) * 100;
+      const wk = Math.max(1, (new Date(o.echeance) - new Date(today())) / 6048e5), need = Math.max(0, Math.ceil((o.cible - cur) / wk));
+      body = `<div class="big" style="margin-top:10px">${cur}<small>/ ${o.cible}</small></div>${bar(pct)}<div class="row"><span>départ ${o.depart}</span><span>${Math.round(pct)} %</span><span>${esc(fmt(o.echeance))}</span></div><div class="row" style="margin-top:6px"><span>rythme requis</span><span style="color:var(--txt)">+${need} / semaine</span></div>`;
+    } else if (o.domaine === 'sport' && CO.sorties) {
+      const best = Math.max(0, ...CO.sorties.map(s => +s.km || 0));
+      body = `<div class="big" style="margin-top:10px">${num(best.toFixed(2).replace(/0$/, ''))}<small>/ 10 km</small></div>${bar(best * 10, '', 'background:linear-gradient(90deg,#1fbf7a,#6ff0b0);box-shadow:0 0 12px #6ff0b0')}<div class="row"><span>plus longue sortie</span><span>${Math.round(best * 10)} %</span></div>`;
+    } else if (o.domaine === 'creatif' && PI.seances) {
+      const wk = PI.seances.filter(s => (new Date(today()) - new Date(s.date)) / 864e5 < 7).length;
+      body = `<div class="big" style="margin-top:10px">${wk}<small>/ 3 séances cette semaine</small></div>${bar(wk / 3 * 100, 'g')}`;
+    }
+    if (o.etapes) { const f = o.etapes.filter(e => e.fait).length; body += `<div class="row" style="margin:10px 0 2px"><span>étapes</span><span>${f} / ${o.etapes.length}</span></div>${bar(f / o.etapes.length * 100, 'g')}` + o.etapes.map(e => `<label class="chk"><input type="checkbox" data-a="etape" data-o="${esc(o.t)}" data-n="${e.n}"${e.fait ? ' checked' : ''}><span>${esc(e.t)}</span></label>`).join(''); }
+    return `<div class="panel obj"><div class="t">${esc(o.t)}</div><div class="m"><span style="color:${d.col}">● ${esc(d.nom)}</span>${o.echeance ? ' · échéance : ' + esc(/\d{4}-\d{2}/.test(o.echeance) ? fmt(o.echeance, {day: 'numeric', month: 'long', year: 'numeric'}) : o.echeance) : ''}${o.rythme ? '<br>rythme : ' + esc(o.rythme) : ''}${o.progression ? '<br>' + esc(o.progression) : ''}</div>${body}</div>`;
+  }).join('');
+  const P = O.projets || [], col = (k, t) => { const L = P.filter(p => pcol(p.statut) === k); return `<div class="panel"><h3>${t} · ${L.length}</h3>${L.map(p => `<div class="kc"><b>${esc(p.t)}</b><select class="sel" data-a="pstat" data-t="${esc(p.t)}" aria-label="Statut de ${esc(p.t)}">${[...new Set([p.statut, ...PSTAT])].map(s => `<option${s === p.statut ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></div>`).join('') || '<div class="empty">—</div>'}</div>`; };
+  const R = O.rappels || [];
+  return `<div class="vh"><div><h1>Objectifs & projets</h1><p>${(O.objectifs || []).length} objectifs · ${P.filter(p => pcol(p.statut) === 'now').length} projets en cours</p></div><div class="tools">${syncTag()}<button class="btn" data-a="pform">＋ Projet</button><button class="btn pri" data-a="oform">＋ Objectif</button></div></div>
+  <div class="grid g3">${cards || '<div class="empty">Aucun objectif.</div>'}</div>
+  <div class="kb">${col('now', 'En cours')}${col('next', 'À venir')}${col('done', 'Terminé')}</div>
+  ${R.length ? `<div class="panel"><h3>Rappels</h3>${R.map(r => `<div class="it"><span>${esc(r.t)}</span><span class="tg">${esc(r.quand)} · ${esc(r.source || '')}</span></div>`).join('')}</div>` : ''}`;
+}
+function oForm() {
+  openSheet(`<h3>Nouvel objectif</h3><form class="fm" id="of"><label>Objectif<input class="inp" name="t" required maxlength="120" placeholder="Ex. Passer Gold sur LoL"></label>
+  <div class="row2"><label>Domaine<select class="sel" name="d">${DOMS().map(d => `<option value="${d.id}">${esc(d.nom)}</option>`).join('')}</select></label><label>Échéance<input class="inp" type="date" name="e"></label></div>
+  <label>Étapes <span class="hint">une par ligne, facultatif</span><textarea class="inp" name="et" placeholder="Étape 1&#10;Étape 2"></textarea></label>
+  <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">Créer</button></div></form>`);
+  $('of').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); const t = f.t.trim(); if (!t) return;
+    const et = f.et.split('\n').map(x => x.trim()).filter(Boolean).map((x, i) => ({n: i + 1, t: x, fait: false}));
+    const o = {domaine: f.d, t, cree: today(), statut: 'en cours'}; if (f.e) o.echeance = f.e; if (et.length) o.etapes = et;
+    closeSheet(); commit({op: 'obj_add', o}, 'Objectif créé'); };
+}
+function pForm() {
+  openSheet(`<h3>Nouveau projet</h3><form class="fm" id="pf"><label>Projet<input class="inp" name="t" required maxlength="120"></label><label>Statut<select class="sel" name="s">${PSTAT.map(s => `<option>${s}</option>`).join('')}</select></label>
+  <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">Créer</button></div></form>`);
+  $('pf').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); if (!f.t.trim()) return; closeSheet(); commit({op: 'projet', t: f.t.trim(), statut: f.s}, 'Projet ajouté'); };
+}
+
+/* ---------- SUIVI ---------- */
+function vSuivi() {
+  const sub = UI.suivi;
+  const head = `<div class="vh"><div><h1>Suivi</h1><p>Échecs, course et piano : tes chiffres dans le temps.</p></div><div class="tools">${syncTag()}<div class="tabs">${[['echecs', '♞ Échecs'], ['course', '◔ Course'], ['piano', '♪ Piano']].map(([id, t]) => `<button class="chip${sub === id ? ' on' : ''}" data-a="suivi" data-s="${id}">${t}</button>`).join('')}</div></div></div>`;
+  return head + ({echecs: sEchecs, course: sCourse, piano: sPiano}[sub] || sEchecs)();
+}
+function sEchecs() {
+  const E = O.echecs || {}, el = E.elo || {}, H = E.historique || [], ob = (O.objectifs || []).find(o => o.domaine === 'echecs' && o.cible), Lc = E.lecture || {}, R = E.record_rapide;
+  const pts = H.filter(h => h.rapide).map(h => ({x: h.date, y: h.rapide}));
+  const first = pts[0], last = pts[pts.length - 1];
+  const gain = first && last ? last.y - first.y : 0, days = first && last ? Math.max(1, (new Date(last.x) - new Date(first.x)) / 864e5) : 1, pace = gain / days * 7;
+  let eta = ''; if (ob && last && pace > 0) { const w = (ob.cible - last.y) / pace, d = new Date(+new Date(last.x) + w * 6048e5); eta = w <= 0 ? 'objectif atteint' : `à ce rythme : ${ob.cible} vers le ${fmt(d.toISOString().slice(0, 10), {day: 'numeric', month: 'long', year: 'numeric'})}`; }
+  let proj = null; if (ob && last && pace > 0 && last.y < ob.cible) { const tE = +new Date(ob.echeance), tL = +new Date(last.x), tHit = tL + (ob.cible - last.y) / pace * 6048e5; const tEnd = Math.min(tE, tHit); proj = [{x: last.x, y: last.y}, {x: new Date(tEnd).toISOString().slice(0, 10), y: Math.round(last.y + pace * (tEnd - tL) / 6048e5)}]; }
+  const df = Lc.defaites || {}, dt = Object.values(df).reduce((a, b) => a + b, 0) || 1, dc = {mat: '#ff7a8a', abandon: '#ffb36b', temps: '#9fb3d9'};
+  return `<div class="grid g4">${tile('Rapide', el.rapide ?? '—', ob ? `objectif ${ob.cible}` : '', 'var(--cyan)')}${tile('Blitz', el.blitz ?? '—')}${tile('Bullet', el.bullet ?? '—')}${tile('Tactique', el.tactique_max ?? '—', 'record puzzles')}</div>
+  <div class="panel"><h3>Elo rapide · ${pts.length} relevés</h3><div class="row" style="margin-bottom:8px"><span>${gain >= 0 ? '+' : ''}${gain} depuis le ${esc(fmt(first?.x))} · ${pace >= 0 ? '+' : ''}${pace.toFixed(1).replace('.', ',')} / semaine</span><span style="color:var(--gold)">${esc(eta)}</span></div>
+  ${lineChart(pts, {target: ob?.cible, xmax: proj ? ob.echeance : null, proj, label: 'Évolution de l’Elo rapide'})}
+  <div class="tools" style="justify-content:space-between;margin-top:8px"><span class="d">pseudo ${esc(E.pseudo || '—')} · relevé du ${esc(fmt(E.releve))}${R ? ` · bilan total ${R.v}V ${R.d}D ${R.n}N` : ''}</span><button class="btn" data-a="eform">＋ Relevé manuel</button></div></div>
+  <div class="grid g2"><div class="panel"><h3>Points forts</h3><ul class="ul ok">${(Lc.points_forts || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>—</li>'}</ul></div>
+  <div class="panel"><h3>À travailler</h3><ul class="ul wa">${(Lc.a_travailler || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>—</li>'}</ul></div></div>
+  ${Lc.parties ? `<div class="panel"><h3>Sur 30 jours · ${Lc.parties} parties</h3><div class="row" style="margin-bottom:8px"><span>rapide ${esc(Lc.rapide || '')}</span><span>précision moyenne ${Lc.precision_moy ?? '—'} %</span></div>
+  <div class="dist"><div class="r" style="cursor:default"><span class="nm">Défaites par</span><div class="bars">${Object.entries(df).map(([k, v]) => `<i style="flex:${v};background:${dc[k] || '#888'}" title="${k} : ${v}"></i>`).join('')}</div><span class="n">${dt}</span></div></div>
+  <div class="lgd" style="margin-top:8px">${Object.entries(df).map(([k, v]) => `<span><i style="background:${dc[k] || '#888'}"></i>${k} ${v} (${Math.round(v / dt * 100)} %)</span>`).join('')}</div></div>` : ''}`;
+}
+const toSec = s => { const p = String(s || '').split(':').map(Number); if (p.some(isNaN)) return 0; return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : p[0] * 60; };
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+function sCourse() {
+  const CO = O.course || {}, Sx = CO.sorties || [], best = Sx.reduce((m, s) => +s.km > +m.km ? s : m, {km: 0});
+  const paces = Sx.map(s => ({s, p: s.allure ? toSec(s.allure) : toSec(s.duree) / (+s.km || 1)})).filter(x => x.p > 0);
+  const bp = paces.reduce((m, x) => !m || x.p < m.p ? x : m, null), tot = Sx.reduce((a, s) => a + (+s.km || 0), 0), last = Sx[Sx.length - 1];
+  const rows = Sx.slice(-14).map(s => ({x: fmt(s.date), y: +s.km || 0, lab: num(+s.km), tip: `${fmt(s.date)} · ${num(s.km)} km en ${s.duree}`}));
+  const Z = CO.zones_fc || {};
+  return `<div class="grid g4">${tile('Plus longue', num(+best.km || 0) + '<small>km</small>', `${Math.round((+best.km || 0) * 10)} % des 10 km`, '#6ff0b0')}${tile('Meilleure allure', bp ? mmss(bp.p) + '<small>/km</small>' : '—', bp ? fmt(bp.s.date) : '')}${tile('Sorties', Sx.length, num(tot.toFixed(1)) + ' km au total')}${tile('Dernière', last ? fmt(last.date) : '—', last ? `${num(last.km)} km · ${last.allure || ''}/km` : '')}</div>
+  <div class="panel"><h3>Distance par sortie</h3>${barChart(rows, {target: 10, tlab: '10 km', label: 'Distance par sortie'})}<div class="tools" style="justify-content:space-between;margin-top:8px"><span class="d">${esc(CO.objectif || '')}</span><button class="btn pri" data-a="cform">＋ Ajouter une sortie</button></div></div>
+  <div class="grid g2"><div class="panel"><h3>Plan</h3><div class="mood">${esc(CO.plan || '—')}</div><div class="d" style="margin-top:10px">${esc(CO.rythme || '')}${CO.outils ? ' · ' + esc(CO.outils) : ''}</div></div>
+  <div class="panel"><h3>Zones de fréquence cardiaque</h3>${Object.entries(Z).map(([k, v]) => `<div class="it"><span style="text-transform:uppercase;font-family:var(--mono);font-size:12px;color:var(--mut)">${esc(k.replace('_', ' '))}</span><span class="tg" style="color:var(--txt);font-size:12px">${esc(v)} bpm</span></div>`).join('') || '<div class="empty">—</div>'}</div></div>
+  <div class="panel"><h3>Historique</h3><div class="tblw"><table class="tbl"><thead><tr><th>Date</th><th>Km</th><th>Durée</th><th>Allure</th><th>FC</th><th>Ressenti</th></tr></thead><tbody>${Sx.slice().reverse().map(s => `<tr><td class="n">${esc(fmt(s.date, {day: 'numeric', month: 'short', year: '2-digit'}))}</td><td class="n">${num(s.km)}</td><td class="n">${esc(s.duree || '')}</td><td class="n">${esc(s.allure || '')}</td><td class="n">${s.fc_moy ? s.fc_moy + (s.fc_max ? ' / ' + s.fc_max : '') : ''}</td><td>${esc([s.type, s.ressenti].filter(Boolean).join(' — '))}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function sPiano() {
+  const P = O.piano || {}, Sx = P.seances || [], M = P.morceau_en_cours, pr = M ? parseInt(String(M.progression).replace(/[^0-9]/g, ' ').trim()) || 0 : 0;
+  const tot = Sx.reduce((a, s) => a + (+s.duree_min || 0), 0);
+  const wk = []; const t0 = new Date(today()); const dow = (t0.getDay() + 6) % 7; const mon = new Date(+t0 - dow * 864e5);
+  for (let i = 7; i >= 0; i--) { const a = new Date(+mon - i * 6048e5), b = new Date(+a + 6048e5); const n = Sx.filter(s => { const d = new Date(s.date); return d >= a && d < b; }).length; wk.push({a, n}); }
+  const mx = Math.max(3, ...wk.map(w => w.n));
+  return `<div class="grid g4">${tile('Séances', Sx.length, 'depuis la reprise', 'var(--gold)')}${tile('Temps total', tot + '<small>min</small>', Sx.length ? `≈ ${Math.round(tot / Sx.length)} min / séance` : '')}${tile('Cette semaine', wk[wk.length - 1].n + '<small>/ 3</small>', ((O.rappels || []).find(r => /piano/i.test(r.t || '')) || {}).quand || 'objectif 3 / semaine')}${tile('Dernière', Sx.length ? fmt(Sx[Sx.length - 1].date) : '—')}</div>
+  <div class="grid g2"><div class="panel"><h3>Morceau en cours</h3>${M ? `<div style="font-size:16px;font-weight:500">${esc(M.t)}</div>${bar(pr, 'g')}<div class="row"><span>depuis ${esc(fmt(M.debut))}</span><span>${pr} %</span></div>${M.repere ? `<div class="d" style="margin-top:8px">repère : ${esc(M.repere)}</div>` : ''}${/^https:\/\//.test(M.lien || '') ? `<a class="btn gh" style="margin-top:12px" href="${esc(M.lien)}" target="_blank" rel="noopener">Ouvrir le tuto ↗</a>` : ''}` : '<div class="empty">Aucun morceau en cours.</div>'}</div>
+  <div class="panel"><h3>Séances par semaine</h3><div class="wkg">${wk.map(w => `<div><i class="${w.n < 3 ? 'lo' : ''}" style="height:${Math.max(2, w.n / mx * 100)}%" title="semaine du ${fmt(w.a.toISOString().slice(0, 10))} : ${w.n}"></i><span>${fmt(w.a.toISOString().slice(0, 10), {day: 'numeric', month: 'numeric'})}</span></div>`).join('')}</div><div class="row" style="margin-top:8px"><span>8 dernières semaines</span><span>objectif 3 / semaine</span></div></div></div>
+  <div class="panel"><h3>Séances</h3><div class="tools" style="justify-content:flex-end;margin-bottom:6px"><button class="btn pri" data-a="piform">＋ Noter une séance</button></div>${Sx.slice().reverse().map(s => `<div class="it"><span class="d">${esc(fmt(s.date))}</span><span style="font-size:13px">${esc(s.contenu)}</span><span class="tg">${s.duree_min} min</span></div>`).join('') || '<div class="empty">Aucune séance notée.</div>'}</div>
+  ${(P.programme || []).length ? `<div class="grid g3">${P.programme.map(p => `<div class="panel"><h3>${esc(p.phase)}</h3><ul class="ul">${(p.morceaux || []).map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>`).join('')}</div>` : ''}
+  ${P.profil ? `<div class="panel"><h3>Profil</h3><div class="mood">${esc(P.profil)}</div>${(P.gouts || []).length ? `<div class="d" style="margin-top:8px">goûts : ${P.gouts.map(esc).join(' · ')}</div>` : ''}</div>` : ''}`;
+}
+function eForm() {
+  const el = (O.echecs || {}).elo || {};
+  openSheet(`<h3>Relevé chess.com</h3><form class="fm" id="ef"><label>Date<input class="inp" type="date" name="date" value="${today()}" required></label>
+  <div class="row2"><label>Rapide<input class="inp" type="number" name="r" min="100" max="3000" value="${el.rapide || ''}" required></label><label>Blitz<input class="inp" type="number" name="b" min="100" max="3000" value="${el.blitz || ''}"></label></div>
+  <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">Enregistrer</button></div></form>`);
+  $('ef').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); closeSheet(); commit({op: 'echecs', date: f.date, rapide: +f.r || undefined, blitz: +f.b || undefined}, 'Relevé enregistré', true); };
+}
+function cForm() {
+  openSheet(`<h3>Nouvelle sortie</h3><form class="fm" id="cf"><div class="row2"><label>Date<input class="inp" type="date" name="date" value="${today()}" required></label><label>Type<select class="sel" name="type"><option>plaisir (zone 4)</option><option>longue (endurance)</option><option>fractionné</option><option>récupération</option><option>course officielle</option></select></label></div>
+  <div class="row2"><label>Distance (km)<input class="inp" name="km" inputmode="decimal" placeholder="6,5" required></label><label>Durée<input class="inp" name="duree" placeholder="42:00 ou 1:02:30" required pattern="\\d{1,2}(:\\d{2}){1,2}"></label></div>
+  <div class="row2"><label>FC moyenne<input class="inp" type="number" name="fc" min="60" max="230"></label><label>Difficulté<select class="sel" name="dif"><option value="">—</option>${[1, 2, 3, 4, 5].map(n => `<option>${n}/5</option>`).join('')}</select></label></div>
+  <label>Ressenti<input class="inp" name="res" maxlength="200"></label><div class="hint" id="cal" style="font:400 12px var(--mono);color:var(--mut)"></div>
+  <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">Ajouter</button></div></form>`);
+  const upd = () => { const f = Object.fromEntries(new FormData($('cf'))), km = parseFloat(String(f.km).replace(',', '.')), s = toSec(f.duree); $('cal').textContent = km > 0 && s > 0 ? `allure : ${mmss(s / km)} /km` : ''; };
+  $('cf').oninput = upd;
+  $('cf').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); const km = parseFloat(String(f.km).replace(',', '.')), s = toSec(f.duree); if (!(km > 0) || !s) { toast('Distance ou durée invalide.'); return; }
+    const o = {date: f.date, km: Math.round(km * 100) / 100, duree: f.duree, allure: mmss(s / km), type: f.type, ressenti: f.res.trim(), src: 'saisie Orion'}; if (+f.fc) o.fc_moy = +f.fc; if (f.dif) o.difficulte = f.dif;
+    closeSheet(); commit({op: 'course', s: o}, 'Sortie ajoutée', true); };
+}
+function piForm() {
+  const M = (O.piano || {}).morceau_en_cours, pr = M ? parseInt(String(M.progression).replace(/[^0-9]/g, ' ').trim()) || 0 : 0;
+  openSheet(`<h3>Séance de piano</h3><form class="fm" id="pif"><div class="row2"><label>Date<input class="inp" type="date" name="date" value="${today()}" required></label><label>Durée (min)<input class="inp" type="number" name="min" min="1" max="300" value="15" required></label></div>
+  <label>Contenu<input class="inp" name="c" required maxlength="200" placeholder="${M ? esc(M.t.split('–').pop().trim()) + ' : jusqu’à 1:30' : 'Morceau, passage travaillé…'}"></label>
+  ${M ? `<div class="row2"><label>Progression du morceau (%)<input class="inp" type="number" name="p" min="0" max="100" value="${pr}"></label><label>Repère<input class="inp" name="rep" value="${esc(M.repere || '')}"></label></div>` : ''}
+  <div class="act"><button type="button" class="btn gh" data-a="close">Annuler</button><button class="btn pri">Noter</button></div></form>`);
+  $('pif').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); const op = {op: 'piano', s: {date: f.date, duree_min: +f.min, contenu: f.c.trim()}};
+    if (M && f.p !== undefined && +f.p !== pr) op.progression = +f.p; if (M && f.rep !== undefined && f.rep.trim() !== (M.repere || '')) { op.progression = op.progression ?? +f.p; op.repere = f.rep.trim(); }
+    closeSheet(); commit(op, 'Séance notée', true); };
+}
+
+/* ---------- JOURNAL ---------- */
+const JT = {humeur: '#ff9ad5', envie: '#6ff0b0', saisie: '#5ee7ff', systeme: '#58627f', objectif: '#ffcf5c', echecs: '#a98bff', course: '#5cf2a8', piano: '#ffcf5c', musique: '#ff9a5c', deco: '#f2e05c', perso: '#9fb3d9'};
+function vJournal() {
+  const all = [...(O.journal || []).map(j => ({date: j.date, type: j.type || 'note', t: j.texte})), ...(O.humeurs || []).map(h => ({date: h.date, type: 'humeur', t: h.t})), ...(O.envies || []).map(h => ({date: h.date, type: 'envie', t: h.t}))]
+    .filter(e => e.t).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const types = [...new Set(all.map(e => e.type))];
+  const F = all.filter(e => !UI.jf || e.type === UI.jf);
+  let html = '', cur = null;
+  F.slice(0, 300).forEach(e => { if (e.date !== cur) { cur = e.date; html += `<div class="day">${esc(/\d{4}-\d{2}-\d{2}/.test(cur) ? fmtL(cur) : cur)}</div>`; } html += `<div class="ev"><span class="pill" style="color:${JT[e.type] || 'var(--mut)'}">${esc(e.type)}</span><span>${esc(e.t)}</span></div>`; });
+  const hm = (O.humeurs || []).slice(-1)[0];
+  return `<div class="vh"><div><h1>Journal</h1><p>${all.length} entrées${hm ? ' · dernière humeur le ' + esc(fmt(hm.date)) : ''}</p></div>${syncTag()}</div>
+  <div class="grid g3">
+    <div class="panel"><h3>Humeur du jour</h3><form class="compose" data-f="humeur"><input class="inp" name="t" maxlength="200" placeholder="Comment ça va ?" aria-label="Humeur du jour" required><button class="btn pri">Noter</button></form></div>
+    <div class="panel"><h3>Une envie</h3><form class="compose" data-f="envie"><input class="inp" name="t" maxlength="200" placeholder="Ce que tu aimerais faire…" aria-label="Nouvelle envie" required><button class="btn pri">Ajouter</button></form></div>
+    <div class="panel"><h3>Une note</h3><form class="compose" data-f="note"><input class="inp" name="t" maxlength="300" placeholder="Fait marquant, idée…" aria-label="Nouvelle note" required><button class="btn pri">Ajouter</button></form></div>
+  </div>
+  <div class="panel"><div class="tabs" style="margin-bottom:14px"><button class="chip${!UI.jf ? ' on' : ''}" data-a="jf" data-v="">Tout</button>${types.map(t => `<button class="chip${UI.jf === t ? ' on' : ''}" data-a="jf" data-v="${esc(t)}"><i style="background:${JT[t] || 'var(--mut)'}"></i>${esc(t)}</button>`).join('')}</div>
+  <div class="tl">${html || '<div class="empty">Rien pour ce filtre.</div>'}</div></div>`;
+}
+
+/* ---------- DONNÉES : import / export ---------- */
+const OPL = {k_add: 'ajout', k_edit: 'modif.', k_del: 'suppr.', etape: 'étape', obj_add: 'objectif', projet: 'projet', humeur: 'humeur', envie: 'envie', note: 'note', course: 'course', piano: 'piano', echecs: 'échecs'};
+const opTxt = o => o.k?.t || o.t || o.obj || o.o?.t || o.texte || (o.s && (o.s.km ? o.s.km + ' km' : o.s.contenu)) || (o.rapide ? o.rapide + ' en rapide' : '');
+function vDonnees() {
+  const ops = S.ops.slice().reverse(), pwa = MODE === 'pwa';
+  let imp = ''; try { imp = localStorage.getItem('orion-data-date') || ''; } catch (e) {}
+  const src = pwa ? `Données importées${imp ? ' le ' + esc(fmt(imp.slice(0, 10), {day: 'numeric', month: 'long'})) : ''} · base du ${esc(fmt(O.maj, {day: 'numeric', month: 'long'}))}. Tout reste sur cet appareil.`
+    : `Données de la base Orion, mises à jour par le bilan du soir (dernière : ${esc(fmt(O.maj, {day: 'numeric', month: 'long'}))}).`;
+  const file = (id, txt, cls = '') => `<label class="btn ${cls}" style="position:relative">${txt}<input type="file" id="${id}" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>`;
+  const actions = pwa
+    ? `${file('imp_data', '↓ Importer un export Orion', 'pri')}<button class="btn" data-a="exp_ops">↑ Exporter mes saisies (${S.ops.length})</button><button class="btn gh" data-a="exp_all">Tout exporter</button><button class="btn dg" data-a="wipe">Effacer cet appareil</button>`
+    : `<button class="btn pri" data-a="exp_all">↑ Exporter pour l'appli téléphone</button>${file('imp_ops', '↓ Importer des saisies de l\'appli')}`;
+  const how = pwa
+    ? `<ol class="ul"><li>Dans Orion sur claude.ai, onglet <b>Données</b> → « Exporter pour l'appli téléphone ».</li><li>Ici, « Importer un export Orion » et choisis ce fichier. Refais-le quand tu veux rafraîchir.</li><li>Ce que tu saisis ici reste sur ce téléphone : « Exporter mes saisies », puis dans Orion sur claude.ai « Importer des saisies de l'appli ». Le bilan du soir les intègre ensuite.</li></ol>
+       <h3 style="margin-top:16px">Installer l'appli</h3><ul class="ul"><li><b>iPhone</b> : Safari → Partager → Sur l'écran d'accueil.</li><li><b>Android</b> : Chrome → menu ⋮ → Installer l'application.</li></ul><div class="d" style="margin-top:8px">Hors réseau : tout fonctionne, la carte 3D aussi une fois ouverte une première fois avec du réseau.</div>`
+    : `<ol class="ul"><li>« Exporter pour l'appli téléphone » enregistre un fichier .json avec toutes tes données.</li><li>Dans l'appli Orion installée, onglet Données → « Importer un export Orion ».</li><li>Ce que tu saisis dans l'appli : exporte-le là-bas, puis « Importer des saisies de l'appli » ici. Elles rejoignent la base et le bilan du soir les intègre.</li></ol>`;
+  return `<div class="vh"><div><h1>Données</h1><p>${src}</p></div>${syncTag()}</div>
+  <div class="panel"><h3>Import / export</h3><div class="tools">${actions}</div></div>
+  <div class="grid g2"><div class="panel"><h3>Comment ça marche</h3>${how}</div>
+  <div class="panel"><h3>Saisies ${pwa ? 'sur cet appareil' : 'en attente du bilan'} · ${ops.length}</h3>${ops.slice(0, 40).map(o => `<div class="it"><span class="d">${esc(fmt(String(o.ts).slice(0, 10)))}</span><span style="font-size:12.5px">${esc(opTxt(o))}</span><span class="tg">${esc(OPL[o.op] || o.op)}</span></div>`).join('') || '<div class="empty">Aucune saisie.</div>'}</div></div>`;
+}
+const stamp = () => today();
+const exportAll = () => ({type: 'orion-export', version: 1, cree: new Date().toISOString(), data: O, saisies: S.ops});
+async function saveFile(name, obj) {
+  const txt = JSON.stringify(obj);
+  if (MODE !== 'pwa') {
+    const dl = window.claude && window.claude.use ? await Promise.race([window.claude.use('downloads'), new Promise(r => setTimeout(() => r(null), 4000))]) : null;
+    if (!dl) { toast('Téléchargement indisponible dans cette vue.'); return; }
+    try { await dl.save({filename: name, data: txt}); toast('Fichier prêt : ' + name); }
+    catch (e) { toast(e && e.code === 'declined' ? 'Téléchargement annulé.' : 'Téléchargement impossible (' + ((e && e.code) || 'erreur') + ').'); }
+    return;
+  }
+  const f = new File([txt], name, {type: 'application/json'});
+  if (/iPhone|iPad|Android/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({files: [f]})) {
+    try { await navigator.share({files: [f], title: name}); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('Fichier téléchargé : ' + name);
+}
+window.orionParseImport = function (txt) {
+  let j = JSON.parse(txt);
+  if (j && typeof j.json === 'string' && !j.type) j = JSON.parse(j.json);
+  if (j && j.type === 'orion-export') return {data: j.data, saisies: j.saisies || []};
+  if (j && j.type === 'orion-saisies') return {saisies: j.saisies || []};
+  if (j && Array.isArray(j.connaissances)) return {data: j, saisies: []};
+  if (Array.isArray(j)) return {saisies: j};
+  throw new Error('format');
+};
+async function readFile(inp) { const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return null; try { return window.orionParseImport(await f.text()); } catch (e) { toast('Fichier non reconnu : choisis un export Orion (.json).'); return null; } }
+async function importOps(list) {
+  const before = new Set(S.ops.map(o => o.id)); S.merge(list); const fresh = S.ops.filter(o => !before.has(o.id));
+  if (!fresh.length) { toast('Rien de nouveau dans ce fichier.'); return; }
+  fresh.forEach(op => { try { window.orionApply(O, op); } catch (e) {} });
+  S.saveLocal(); mapDirty = true; await S.sync(); render();
+  toast(fresh.length + ' saisie' + (fresh.length > 1 ? 's' : '') + ' importée' + (fresh.length > 1 ? 's' : '') + '.', 'Recharger la carte', () => location.reload());
+}
+view.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'imp_ops') { const r = await readFile(t); if (r) importOps(r.saisies); }
+  else if (t.id === 'imp_data') { const r = await readFile(t); if (!r) return;
+    if (!r.data || !Array.isArray(r.data.connaissances) || !Array.isArray(r.data.domaines)) { if (r.saisies.length) { importOps(r.saisies); return; } toast('Ce fichier ne contient pas de données Orion.'); return; }
+    try { localStorage.setItem('orion-data', JSON.stringify(r.data)); localStorage.setItem('orion-data-date', new Date().toISOString()); } catch (e) { toast('Stockage plein ou bloqué sur cet appareil.'); return; }
+    S.merge(r.saisies); S.saveLocal(); toast('Données importées.'); setTimeout(() => location.reload(), 700); }
+});
+
+/* ---------- feuille modale ---------- */
+let lastFocus = null;
+function openSheet(h) { lastFocus = document.activeElement; sheet.firstElementChild.innerHTML = h; sheet.classList.add('on'); const f = sheet.querySelector('input,select,textarea,button'); setTimeout(() => f && f.focus({preventScroll: true}), 60); }
+function closeSheet() { sheet.classList.remove('on'); if (lastFocus && lastFocus.focus) lastFocus.focus({preventScroll: true}); }
+sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
+
+/* ---------- interactions (délégation) ---------- */
+function act(e) {
+  const a = e.target.closest('[data-a]'); if (!a) return; const A = a.dataset.a, T = a.dataset.t;
+  if (A === 'open') kDetail(T);
+  else if (A === 'kform') kForm(T);
+  else if (A === 'close') closeSheet();
+  else if (A === 'kdel') { if (a.dataset.c) { closeSheet(); commit({op: 'k_del', t: T}, 'Supprimé : ' + T, true); } else { a.dataset.c = '1'; a.textContent = 'Confirmer la suppression'; } }
+  else if (A === 'kmap') { closeSheet(); go('carte'); const ok = window.__orionMap && window.__orionMap.focus(T); if (!ok) toast('Ce sujet apparaîtra sur la carte après rechargement.', 'Recharger', () => location.reload()); }
+  else if (A === 'fdom') { UI.d = a.dataset.d; UI.s = ''; saveUI(); render(); $('klist')?.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  else if (A === 'freset') { UI.d = UI.s = UI.q = ''; saveUI(); render(); }
+  else if (A === 'oform') oForm(); else if (A === 'pform') pForm();
+  else if (A === 'suivi') { UI.suivi = a.dataset.s; saveUI(); render(); }
+  else if (A === 'eform') eForm(); else if (A === 'cform') cForm(); else if (A === 'piform') piForm();
+  else if (A === 'jf') { UI.jf = a.dataset.v; saveUI(); render(); }
+  else if (A === 'exp_all') saveFile(`orion-export-${stamp()}.json`, exportAll());
+  else if (A === 'exp_ops') { if (!S.ops.length) toast('Aucune saisie à exporter.'); else saveFile(`orion-saisies-${stamp()}.json`, {type: 'orion-saisies', version: 1, cree: new Date().toISOString(), saisies: S.ops}); }
+  else if (A === 'wipe') { if (a.dataset.c) { try { ['orion-data', 'orion-data-date', 'orion-saisies'].forEach(k => localStorage.removeItem(k)); } catch (e) {} location.reload(); } else { a.dataset.c = '1'; a.textContent = 'Confirmer : tout effacer'; } }
+}
+view.addEventListener('click', act); sheet.addEventListener('click', act);
+view.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.li[data-a]')) { e.preventDefault(); act(e); } });
+view.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.a === 'etape') commit({op: 'etape', obj: t.dataset.o, n: +t.dataset.n, fait: t.checked}, t.checked ? 'Étape cochée' : 'Étape décochée');
+  else if (t.dataset.a === 'pstat') commit({op: 'projet', t: t.dataset.t, statut: t.value}, 'Statut mis à jour');
+  else if (t.id === 'fd') { UI.d = t.value; saveUI(); render(); } else if (t.id === 'fs') { UI.s = t.value; saveUI(); render(); } else if (t.id === 'fo') { UI.sort = t.value; saveUI(); render(); }
+});
+view.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-f]'); if (!f) return; e.preventDefault();
+  const v = f.t.value.trim(); if (!v) return; const k = f.dataset.f;
+  commit(k === 'note' ? {op: 'note', date: today(), type: 'perso', texte: v} : {op: k, date: today(), t: v}, k === 'humeur' ? 'Humeur notée' : k === 'envie' ? 'Envie ajoutée' : 'Note ajoutée');
+});
+let qT = null;
+function after() {
+  const q = $('q'); if (!q) return;
+  q.oninput = () => { UI.q = q.value; clearTimeout(qT); qT = setTimeout(() => { const pos = q.selectionStart; render(); const n = $('q'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} }, 180); };
+}
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (sheet.classList.contains('on')) { closeSheet(); e.stopImmediatePropagation(); } else if (tab !== 'carte') { go('carte'); e.stopImmediatePropagation(); } return; }
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+  const i = '123456'.indexOf(e.key); if (i >= 0) go(TABS[i][0]);
+  else if (e.key === '/' && tab === 'explorer') { e.preventDefault(); $('q')?.focus(); }
+}, true);
+go('carte');
+let rT = null; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { if (tab !== 'carte' && !document.activeElement?.matches('input,textarea,select')) render(); }, 250); });
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>window.ORION = null; window.ORION_MODE = 'pwa';</script>
+<script>
+/* Appli installée : données importées sur l'appareil (rien n'est publié dans le dépôt) */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+window.orionWelcome = function () {
+  document.body.classList.add('inview');
+  const i = document.getElementById('intro');
+  setTimeout(() => { if (i) i.classList.add('out'); document.body.classList.remove('pre'); }, 1600);
+  setTimeout(() => i && i.remove(), 3200);
+  const w = document.createElement('div');
+  w.className = 'panel'; w.id = 'welcome';
+  w.style.cssText = 'position:fixed;z-index:25;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));text-align:center;padding:26px 22px;opacity:0;transition:opacity 1s 1.8s';
+  w.innerHTML = `<div style="font:500 22px var(--sans);letter-spacing:.5em;padding-left:.5em">ORI<span style="color:var(--cyan)">O</span>N</div>
+    <p style="color:var(--mut);font-size:13.5px;line-height:1.6;margin:14px 0 18px">Pour démarrer, importe tes données.<br>Dans Orion sur claude.ai : onglet <b style="color:var(--txt)">Données</b> → « Exporter pour l'appli téléphone », puis choisis ce fichier ici.</p>
+    <label style="position:relative;display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:10px;background:linear-gradient(90deg,#9fefff,var(--cyan));color:#06101e;font:600 13.5px var(--sans);cursor:pointer">Importer un export Orion<input type="file" accept=".json,application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" id="wimp"></label>
+    <p id="werr" style="color:#ff7a8a;font-size:12.5px;min-height:1em;margin:12px 0 0"></p>
+    <p style="color:var(--dim);font:400 10.5px var(--mono);margin:6px 0 0;line-height:1.6">Tes données restent sur cet appareil.<br>Elles ne sont envoyées nulle part.</p>`;
+  document.body.appendChild(w); requestAnimationFrame(() => w.style.opacity = 1);
+  document.getElementById('wimp').onchange = async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      let j = JSON.parse(await f.text()); if (j && typeof j.json === 'string' && !j.type) j = JSON.parse(j.json);
+      const d = j && j.type === 'orion-export' ? j.data : j;
+      if (!d || !Array.isArray(d.connaissances) || !Array.isArray(d.domaines)) throw 0;
+      localStorage.setItem('orion-data', JSON.stringify(d)); localStorage.setItem('orion-data-date', new Date().toISOString());
+      if (j.type === 'orion-export' && Array.isArray(j.saisies) && j.saisies.length) localStorage.setItem('orion-saisies', JSON.stringify(j.saisies));
+      location.reload();
+    } catch (err) { document.getElementById('werr').textContent = 'Fichier non reconnu : choisis un export Orion (.json).'; e.target.value = ''; }
+  };
+};
+</script>
+
+<script>
+function __boot(O){
+if (!window.THREE || !O) { document.body.innerHTML = '<p style="padding:40px;color:#ccc;font-family:sans-serif">La carte n’a pas pu se charger.</p>'; throw 0; }
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = d => { const x = new Date(d); return isNaN(x) ? (d || '') : x.toLocaleDateString('fr-FR', {day:'numeric', month:'short'}); };
+const PAL = ['#4fe3ff','#a98bff','#ff9a5c','#ff5c8a','#5cf2a8','#ff7ae0','#6f9bff','#f2e05c','#3fd8c4','#c49bff','#ff7b5c','#9be15d'];
+const GOLDHEX = '#ffcf5c', GOLD = new THREE.Color(GOLDHEX);
+const STAT = k => k.statut || ((k.niveau ?? 1) >= 3 ? 'maitrise' : (k.niveau ?? 1) === 2 ? 'acquis' : 'interet');
+const STAT_TXT = {maitrise:'Maîtrisé', acquis:'Acquis', en_cours:'En cours', interet:'Intérêt'};
+const doms = O.domaines.map((d, i) => ({...d, col: PAL[i % PAL.length]}));
+const domBy = Object.fromEntries(doms.map(d => [d.id, d]));
+const K = O.connaissances.map((k, i) => ({...k, d: domBy[k.d] || k.d === 'toile' ? k.d : 'perso', i, st: STAT(k)})).filter(k => domBy[k.d]);
+const VIS = O.visionnages || [];
+const C3 = (c, k = 1) => new THREE.Color(c).multiplyScalar(k);
+const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.2831853 * v); };
+
+/* ================= renderer ================= */
+const MOBILE = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+let LITE = MOBILE; try { const v = localStorage.getItem('orion-lite'); if (v !== null) LITE = v === '1'; } catch (e) {}
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+const HDPR = () => LITE ? Math.min(MOBILE ? 2.6 : 2, devicePixelRatio || 1) : Math.min(MOBILE ? 2 : 1.5, devicePixelRatio || 1);
+let PR = HDPR();
+renderer.setPixelRatio(PR); renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+const GL2 = renderer.capabilities.isWebGL2;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(78, innerWidth / innerHeight, 1, 14000);
+const world = new THREE.Group(); scene.add(world);
+const UT = {value:0}, UPR = {value:PR}, LOD = [];
+const ADD = {transparent:true, blending:THREE.AdditiveBlending, depthWrite:false};
+
+const NOISE = `
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g; vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);
+  vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy; vec4 h=1.0-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0; vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y); vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0); m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+float fbm4(vec3 p){float f=0.0,a=0.5;for(int i=0;i<4;i++){f+=a*snoise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=0.5;}return f;}
+float fbm3(vec3 p){float f=0.0,a=0.5;for(int i=0;i<3;i++){f+=a*snoise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=0.5;}return f;}
+`;
+const VS_FRESNEL = `varying vec3 vN; varying vec3 vP; varying vec3 vV;
+void main(){ vP=position; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`;
+const VS_UV = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
+
+function glowTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.15, 'rgba(255,255,255,.5)');
+  r.addColorStop(.42, 'rgba(255,255,255,.1)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+}
+function ringTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(.7, 'rgba(255,255,255,0)'); r.addColorStop(.86, 'rgba(255,255,255,.9)');
+  r.addColorStop(.9, 'rgba(255,255,255,.35)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
+}
+const GT = glowTex(), RT = ringTex();
+function spikeTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); g.translate(128, 128);
+  const ray = (len, w, a) => { g.save(); g.rotate(a); const gr = g.createLinearGradient(-len, 0, len, 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.5, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(-len, 0); g.lineTo(0, -w); g.lineTo(len, 0); g.lineTo(0, w); g.closePath(); g.fill(); g.restore(); };
+  ray(128, 2.4, 0); ray(128, 2.4, Math.PI / 2); ray(72, 1.5, Math.PI / 4); ray(72, 1.5, -Math.PI / 4);
+  const r = g.createRadialGradient(0, 0, 0, 0, 0, 24); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(-24, -24, 48, 48);
+  return new THREE.CanvasTexture(c);
+}
+const ST = spikeTex();
+
+const glow = (col, size, op = 1, k = 1) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({map:GT, color:C3(col, k), opacity:op, ...ADD})); s.scale.set(size, size, 1); return s; };
+const lineMat = (col, op, k = 1) => new THREE.LineBasicMaterial({color:C3(col, k), opacity:op, ...ADD});
+
+/* ================= ciel (nébuleuse pré-calculée) ================= */
+{
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(100, 96, 48), new THREE.ShaderMaterial({side:THREE.BackSide, depthWrite:false,
+    vertexShader:`varying vec3 vD; void main(){ vD=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:NOISE + `varying vec3 vD;
+    void main(){
+      vec3 d=normalize(vD);
+      vec3 BN=normalize(vec3(0.62,0.78,0.1));
+      vec3 bx=normalize(cross(BN,vec3(0.0,0.0,1.0))); vec3 by=cross(BN,bx);
+      float h=dot(d,BN); float lon=atan(dot(d,by),dot(d,bx));
+      float n1=fbm4(d*2.2), n2=fbm4(d*5.5+vec3(3.1,1.7,8.2)), n3=fbm3(d*12.0+vec3(7.0,2.0,4.0));
+      float core=exp(-pow(lon-0.6,2.0)*0.8);
+      float band=exp(-pow(h*3.0+n1*0.4,2.0));
+      float glowB=band*(0.3+0.7*core)*(0.6+0.4*n2);
+      float dust=smoothstep(-0.05,0.45,n2+n3*0.35)*exp(-pow(h*8.0+n1*0.3,2.0));
+      vec3 c=mix(vec3(0.40,0.45,0.62),vec3(1.0,0.84,0.62),core)*glowB*0.42;
+      c*=1.0-dust*0.85;
+      c+=vec3(0.6,0.66,0.9)*pow(max(n3,0.0),3.0)*band*0.16;
+      float e1=smoothstep(0.3,0.9,fbm4(d*3.2+vec3(11.0,4.0,2.0)))*exp(-pow(h*2.6,2.0));
+      c+=vec3(0.34,0.06,0.10)*e1*0.22;
+      float e2=smoothstep(0.38,0.95,fbm4(d*2.6+vec3(1.0,15.0,6.0)));
+      c+=vec3(0.05,0.11,0.26)*e2*0.18;
+      c+=vec3(0.002,0.0025,0.005);
+      gl_FragColor=vec4(c,1.0);
+    }`}));
+  const sks = new THREE.Scene(); sks.add(sky);
+  const crt = new THREE.WebGLCubeRenderTarget(1024, {generateMipmaps:true, minFilter:THREE.LinearMipmapLinearFilter});
+  new THREE.CubeCamera(1, 1000, crt).update(renderer, sks);
+  scene.background = crt.texture;
+}
+
+/* ================= étoiles : champ + Voie lactée ================= */
+{
+  const N1 = 11000, N = 30000, p = new Float32Array(N * 3), c = new Float32Array(N * 3), a = new Float32Array(N * 2);
+  const BN = new THREE.Vector3(.62, .78, .1).normalize(), E1 = new THREE.Vector3().crossVectors(BN, new THREE.Vector3(0, 0, 1)).normalize(), E2 = new THREE.Vector3().crossVectors(BN, E1), v = new THREE.Vector3();
+  const pal = [[.62, .72, 1], [.8, .86, 1], [1, 1, 1], [1, .94, .82], [1, .82, .6], [1, .68, .5]];
+  for (let i = 0; i < N; i++) {
+    const r = 3000 + Math.random() * 3500;
+    if (i < N1) { const th = Math.random() * 6.2832, ph = Math.acos(2 * Math.random() - 1); v.set(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)); }
+    else { const th = Math.random() * 6.2832, h = gauss() * (Math.random() < .5 ? .07 : .16); v.copy(E1).multiplyScalar(Math.cos(th)).addScaledVector(E2, Math.sin(th)).multiplyScalar(Math.sqrt(1 - h * h)).addScaledVector(BN, h); }
+    p.set([v.x * r, v.y * r, v.z * r], i * 3);
+    const q = pal[Math.min(5, Math.floor(Math.pow(Math.random(), 1.3) * 6))], k = i < N1 ? 1 : .7 + Math.random() * .5;
+    c.set([q[0] * k, q[1] * k, q[2] * k], i * 3);
+    const big = i < N1 && Math.random() < .012;
+    a.set([big ? 3.2 + Math.random() * 2.5 : i < N1 ? .7 + Math.pow(Math.random(), 2) * 1.8 : .5 + Math.random() * .8, Math.random() * 100], i * 2);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.setAttribute('aSP', new THREE.BufferAttribute(a, 2)); LOD.push([g, N, 9000]);
+  scene.add(new THREE.Points(g, new THREE.ShaderMaterial({uniforms:{uT:UT, uPR:UPR}, ...ADD,
+    vertexShader:`attribute vec3 color; attribute vec2 aSP; uniform float uT,uPR; varying vec3 vC; varying float vB;
+      void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mv;
+        float tw=0.6+0.4*sin(uT*(0.7+fract(aSP.y*7.13)*2.6)+aSP.y); vB=step(3.0,aSP.x);
+        gl_PointSize=aSP.x*uPR*(1.0+vB*1.6); vC=color*tw*(0.9+vB*2.2); }`,
+    fragmentShader:`varying vec3 vC; varying float vB;
+      void main(){ vec2 q=gl_PointCoord-0.5; float d=length(q); float a=exp(-d*d*26.0);
+        a+=vB*(exp(-abs(q.x)*34.0)*exp(-abs(q.y)*5.0)+exp(-abs(q.y)*34.0)*exp(-abs(q.x)*5.0))*0.7;
+        if(a<0.01) discard; gl_FragColor=vec4(vC*a,1.0); }`})));
+}
+
+/* ================= disque galactique ================= */
+const galaxyMat = new THREE.ShaderMaterial({uniforms:{uT:UT, uPR:UPR, uOp:{value:1}}, ...ADD,
+  vertexShader:`attribute vec4 aG; attribute vec3 aC; uniform float uT,uPR,uOp; varying vec3 vC;
+    void main(){ float r=aG.x; float a=aG.y+uT*0.22*(70.0/(r+70.0)); vec3 p=vec3(cos(a)*r,aG.z,sin(a)*r);
+      vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
+      gl_PointSize=aG.w*uPR*clamp(900.0/-mv.z,0.5,2.4); vC=aC*uOp; }`,
+  fragmentShader:`varying vec3 vC; void main(){ vec2 q=gl_PointCoord-0.5; float a=exp(-dot(q,q)*22.0); if(a<0.02) discard; gl_FragColor=vec4(vC*a,1.0); }`});
+{
+  const N = 46000, g4 = new Float32Array(N * 4), cc = new Float32Array(N * 3);
+  const warm = new THREE.Color(1, .8, .58), cy = new THREE.Color(.42, .84, 1), vio = new THREE.Color(.62, .42, 1), pink = new THREE.Color(1, .38, .72), tmpc = new THREE.Color();
+  for (let i = 0; i < N; i++) {
+    let r, a, y, size = .9 + Math.random() * 1.3;
+    if (i < 7000) { r = 18 + Math.abs(gauss()) * 75; a = Math.random() * 6.2832; y = gauss() * (26 - r * .12); }
+    else { const arm = i % 3; r = 80 + Math.pow(Math.random(), 1.45) * 1150; a = arm * 2.0944 + Math.log(r / 55) * 2.15 + gauss() * (.2 + r / 2600); y = gauss() * (3 + r * .016); }
+    const t = Math.min(1, r / 1200);
+    tmpc.copy(warm).lerp(cy, Math.min(1, t * 3.2)); if (t > .35) tmpc.lerp(vio, Math.min(1, (t - .35) * 1.8));
+    let k = (i < 7000 ? .55 : .26 + Math.exp(-t * 2.2) * .9) * (.6 + Math.random() * .6);
+    const q = Math.random(); if (i >= 7000 && q < .035) { tmpc.copy(pink); k *= 2.6; size = 1.8 + Math.random() * 1.6; } else if (q > .985) { tmpc.setRGB(1, 1, 1); k *= 2.4; size = 2.2; }
+    g4.set([r, a, y, size], i * 4); cc.set([tmpc.r * k, tmpc.g * k, tmpc.b * k], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+  g.setAttribute('aG', new THREE.BufferAttribute(g4, 4)); g.setAttribute('aC', new THREE.BufferAttribute(cc, 3));
+  const pts = new THREE.Points(g, galaxyMat); pts.frustumCulled = false; LOD.push([g, N, 5000]);
+  const gal = new THREE.Group(); gal.add(pts); gal.position.y = -28; gal.rotation.set(.06, 0, .04); world.add(gal);
+}
+
+/* ================= décor lointain : planètes et galaxies ================= */
+const bgPlanetFS = NOISE + `uniform vec3 uA,uB,uRim; uniform float uT,uSeed,uBand; varying vec3 vP; varying vec3 vWN; varying vec3 vW; varying vec3 vV;
+  void main(){ vec3 p=normalize(vP);
+    float w=fbm3(vec3(p.x*2.2,p.y*uBand,p.z*2.2)+uSeed+vec3(uT*0.012,0.0,0.0));
+    float s=fbm3(p*5.0+uSeed*2.0);
+    vec3 c=mix(uA,uB,smoothstep(-0.45,0.55,w+s*0.25));
+    vec3 N=normalize(vWN), L=normalize(-vW);
+    float dif=smoothstep(-0.15,0.7,dot(N,L));
+    float fr=pow(1.0-max(dot(N,normalize(vV)),0.0),3.0);
+    vec3 col=c*(0.06+dif*1.05)+uRim*fr*(0.25+dif*1.4);
+    gl_FragColor=vec4(col,1.0); }`;
+const bgPlanetVS = `varying vec3 vP; varying vec3 vWN; varying vec3 vW; varying vec3 vV;
+  void main(){ vP=position; vWN=normalize(mat3(modelMatrix)*normal); vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vV=cameraPosition-w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`;
+const BGP = [];
+function ringTexBands() {
+  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+  for (let r = 256; r > 120; r -= 2) { const t = (r - 120) / 136, a = (0.25 + 0.75 * Math.abs(Math.sin(r * 0.21) * Math.sin(r * 0.047))) * Math.sin(t * Math.PI);
+    g.beginPath(); g.arc(256, 256, r, 0, 6.2832); g.strokeStyle = `rgba(${230 - t * 40},${205 - t * 50},${170 - t * 60},${a.toFixed(3)})`; g.lineWidth = 2.2; g.stroke(); }
+  return new THREE.CanvasTexture(c);
+}
+/* galaxies lointaines : petites taches discrètes */
+for (let i = 0; i < 22; i++) {
+  const th = Math.random() * 6.2832, ph = Math.acos(2 * Math.random() - 1), r = 5200 + Math.random() * 1200, s = 40 + Math.random() * 90;
+  const col = ['#dfe6ff', '#fff1dc', '#cfdcff', '#ffe2c8'][i % 4], op = .1 + Math.random() * .14;
+  const sp = glow(col, s, op, 1); sp.position.set(r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)); sp.scale.set(s, s * (.25 + Math.random() * .5), 1); sp.material.rotation = Math.random() * 3.14; scene.add(sp);
+  const k = glow('#ffffff', s * .16, op * 2, 1.1); k.position.copy(sp.position); scene.add(k);
+}
+
+/* ================= noyau ================= */
+const core = new THREE.Group(); world.add(core);
+const coreMat = new THREE.ShaderMaterial({uniforms:{uT:UT, uI:{value:1}}, vertexShader:VS_FRESNEL,
+  fragmentShader:NOISE + `uniform float uT,uI; varying vec3 vN; varying vec3 vP; varying vec3 vV;
+    void main(){ float n=fbm4(vP*0.09+vec3(0.0,uT*0.25,uT*0.15)); float n2=fbm3(vP*0.22-vec3(uT*0.4));
+      float fr=pow(1.0-max(dot(normalize(vN),normalize(vV)),0.0),2.0);
+      vec3 hot=vec3(1.7,1.9,2.1), cy=vec3(0.2,1.1,1.7), vi=vec3(0.85,0.4,1.9);
+      vec3 c=mix(cy,hot,smoothstep(-0.25,0.55,n)); c=mix(c,vi,smoothstep(0.25,0.75,n2)*0.55);
+      c*=1.0+fr*2.6; gl_FragColor=vec4(c*uI,1.0); }`});
+const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(20, 64, 64), coreMat); core.add(coreMesh);
+const corona = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({uniforms:{uT:UT}, ...ADD, vertexShader:VS_UV,
+  fragmentShader:NOISE + `uniform float uT; varying vec2 vUv;
+    void main(){ vec2 p=vUv*2.0-1.0; float r=length(p); float a=atan(p.y,p.x);
+      float n=clamp(snoise(vec3(cos(a)*2.2,sin(a)*2.2,uT*0.25))*0.5+0.5,0.0,1.0); float n2=clamp(snoise(vec3(cos(a)*6.0,sin(a)*6.0,uT*0.45+3.0))*0.5+0.5,0.0,1.0);
+      float rays=pow(n,2.5)*0.8+pow(n2,4.0)*0.7;
+      float g=exp(-r*8.0)*1.2+rays*exp(-r*3.0)*smoothstep(0.06,0.16,r)*1.3;
+      g*=smoothstep(1.0,0.5,r);
+      vec3 col=mix(vec3(0.35,1.0,1.5),vec3(0.7,0.35,1.5),smoothstep(0.1,0.7,r));
+      gl_FragColor=vec4(col*g,1.0); }`}));
+corona.scale.set(360, 360, 1); core.add(corona);
+const ico = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(40, 1)), lineMat('#5ee7ff', .4, 1.6)); core.add(ico);
+const shell = (() => { const N = 1100, p = new Float32Array(N * 3); for (let i = 0; i < N; i++) { const y = 1 - 2 * (i + .5) / N, r = Math.sqrt(1 - y * y), th = i * 2.39996, R = 54 + Math.random() * 7; p.set([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R], i * 3); } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); return new THREE.Points(g, new THREE.PointsMaterial({color:C3('#7fe9ff', 1.5), size:1.5, sizeAttenuation:false, opacity:.6, ...ADD})); })();
+core.add(shell);
+const rings = [72, 86, 102].map((r, i) => { const m = new THREE.Mesh(new THREE.TorusGeometry(r, .35, 6, 200), new THREE.MeshBasicMaterial({color:C3(i === 1 ? '#b490ff' : '#5ee7ff', 1.4), opacity:.55, ...ADD})); m.rotation.set(.4 + i * .5 + 1.57, i, .2 * i); core.add(m); return m; });
+/* particules aspirées vers le noyau */
+const accMat = new THREE.ShaderMaterial({uniforms:{uT:UT, uPR:UPR}, ...ADD,
+  vertexShader:`attribute vec4 aS; uniform float uT,uPR; varying float vA; varying float vF;
+    void main(){ float f=fract(aS.x+uT*aS.y); float r=mix(210.0,24.0,f); float a=aS.z+f*7.0+uT*0.15;
+      vec3 p=vec3(cos(a)*r,aS.w*(1.0-f)*36.0,sin(a)*r); vec4 mv=modelViewMatrix*vec4(p,1.0); gl_Position=projectionMatrix*mv;
+      gl_PointSize=(1.2+f*2.2)*uPR*clamp(700.0/-mv.z,0.5,2.0); vA=smoothstep(0.0,0.15,f)*smoothstep(1.0,0.86,f); vF=f; }`,
+  fragmentShader:`varying float vA; varying float vF; void main(){ vec2 q=gl_PointCoord-0.5; float a=exp(-dot(q,q)*20.0)*vA; if(a<0.01) discard; gl_FragColor=vec4(mix(vec3(0.3,0.9,1.4),vec3(1.6,1.8,2.0),vF)*a,1.0); }`});
+{
+  const N = 2400, s = new Float32Array(N * 4);
+  for (let i = 0; i < N; i++) s.set([Math.random(), .05 + Math.random() * .07, Math.random() * 6.2832, gauss()], i * 4);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('aS', new THREE.BufferAttribute(s, 4));
+  const pts = new THREE.Points(g, accMat); pts.frustumCulled = false; core.add(pts); LOD.push([g, N, 0]);
+}
+/* onde de choc périodique */
+const waveMat = new THREE.ShaderMaterial({uniforms:{uP:{value:0}}, side:THREE.DoubleSide, ...ADD, vertexShader:VS_UV,
+  fragmentShader:`uniform float uP; varying vec2 vUv;
+    void main(){ float r=length(vUv*2.0-1.0); float w=exp(-pow((r-uP)/0.01,2.0))*1.4+exp(-pow((r-uP*0.96)/0.045,2.0))*0.35;
+      gl_FragColor=vec4(vec3(0.35,0.95,1.5)*w*0.7*pow(1.0-uP,1.8),1.0); }`});
+const wave = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500), waveMat); wave.rotation.x = -Math.PI / 2; world.add(wave);
+
+/* ================= faisceaux (tubes d'énergie) ================= */
+const tubeVS = `varying vec2 vUv; varying float vFr;
+  void main(){ vUv=uv; vec3 n=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vFr=abs(dot(n,normalize(-mv.xyz))); gl_Position=projectionMatrix*mv; }`;
+const tubeFS = `uniform vec3 uC; uniform float uT,uOp,uSp,uDash,uBody,uHead; varying vec2 vUv; varying float vFr;
+  void main(){ float f=fract(vUv.x*uDash-uT*uSp); float head=pow(clamp(f,0.0,1.0),10.0)*uHead; float e=pow(clamp(vFr,0.0,1.0),1.2);
+    float ends=smoothstep(0.0,0.05,vUv.x)*smoothstep(1.0,0.95,vUv.x);
+    gl_FragColor=vec4(uC*(uBody+head)*e*ends*uOp,1.0); }`;
+function tube(curve, radius, col, o = {}) {
+  const len = curve.getLength();
+  const m = new THREE.ShaderMaterial({uniforms:{uT:UT, uC:{value:C3(col, o.k || 1)}, uOp:{value:o.op ?? 1}, uSp:{value:o.sp || .5}, uDash:{value:Math.max(1, len / (o.gap || 90))}, uBody:{value:o.body ?? .35}, uHead:{value:o.head ?? 2.5}}, vertexShader:tubeVS, fragmentShader:tubeFS, ...ADD});
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, Math.round(len / 5)), radius, 6, false), m);
+}
+
+/* ================= planètes-domaines ================= */
+const planetFS = NOISE + `uniform float uT,uOp; uniform vec3 uC; varying vec3 vN; varying vec3 vP; varying vec3 vV;
+  void main(){ float w=fbm3(vec3(vP.x*0.09,vP.y*0.55,vP.z*0.09)+vec3(uT*0.06,0.0,0.0)); float b=0.5+0.5*sin(vP.y*1.5+w*4.0);
+    float fr=pow(1.0-max(dot(normalize(vN),normalize(vV)),0.0),2.2);
+    vec3 c=uC*(0.5+0.8*b)*1.15+uC*fr*3.6+vec3(fr*fr*0.9)+vec3(0.12)*b;
+    gl_FragColor=vec4(c*uOp,1.0); }`;
+const PS = MOBILE ? 1.9 : 1.45;
+const R = 540, picks = [], labels = [], ringsCours = [], items = [], beams = [];
+doms.forEach((d, i) => {
+  const a = i / doms.length * Math.PI * 2;
+  d.pos = new THREE.Vector3(Math.cos(a) * R * 1.15, [-1, .62, -.28, .95, -.72, .18, .85, -.92, .4, -.5, .75, -.15][i % 12] * 350, Math.sin(a) * R);
+  const g = new THREE.Group(); g.position.copy(d.pos); world.add(g); d.g = g;
+  const PS = MOBILE ? 1.9 : 1.45;
+  const m = new THREE.Mesh(new THREE.SphereGeometry(16 * PS, 16, 16), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+  m.userData = {type:'dom', d}; g.add(m); picks.push(m); d.planet = m;
+  /* étoile : cœur + rayons, cristal filaire, amas de particules */
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(4.2 * PS, 32, 32), new THREE.MeshBasicMaterial({color:C3(d.col, 1.5).lerp(new THREE.Color(1.8, 1.8, 1.8), .5), transparent:true})));
+  g.add(glow(d.col, 70 * PS, .5, 1.2));
+  const spk = new THREE.Sprite(new THREE.SpriteMaterial({map:ST, color:C3(d.col, 1.7).lerp(new THREE.Color(1.7, 1.7, 1.7), .3), opacity:.8, ...ADD})); spk.scale.setScalar(130 * PS); g.add(spk); d.spk = spk;
+  const pr = new THREE.Sprite(new THREE.SpriteMaterial({map:RT, color:C3(d.col, 2), opacity:.55, ...ADD})); pr.scale.setScalar(34 * PS); g.add(pr); d.pring = pr;
+  const tilt = new THREE.Group(); tilt.rotation.set(.35 * (i % 3), 0, .2); tilt.scale.setScalar(PS); g.add(tilt);
+  const cry = new THREE.Group(); tilt.add(cry); d.orb = cry;
+  cry.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(13, 0)), lineMat(d.col, .9, 2.4)));
+  cry.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.OctahedronGeometry(8.5, 0)), lineMat('#ffffff', .4, 1.4)));
+  { const NP = MOBILE ? 160 : 280, pp = new Float32Array(NP * 3);
+    for (let q = 0; q < NP; q++) { const arm = q % 3, rr = 16 + Math.pow(Math.random(), .7) * 22, th = arm * 2.094 + rr * .16 + gauss() * .25; pp[q * 3] = Math.cos(th) * rr; pp[q * 3 + 1] = gauss() * 1.6; pp[q * 3 + 2] = Math.sin(th) * rr; }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    const sw = new THREE.Points(pg, new THREE.PointsMaterial({map:GT, color:C3(d.col, 1.6), size:2.4, sizeAttenuation:true, opacity:.9, ...ADD}));
+    const swg = new THREE.Group(); swg.rotation.set(1.15, 0, .3 * (i % 2 ? 1 : -1)); swg.scale.setScalar(PS); swg.add(sw); g.add(swg); d.swirl = sw; }
+  const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(), d.pos.clone().multiplyScalar(.5).add(new THREE.Vector3(0, 70, 0)), d.pos);
+  d.link = tube(curve, .8, d.col, {k:1.3, op:.75, sp:.35, gap:80, body:.3, head:2.2}); world.add(d.link);
+  labels.push({obj:g, el:mkLabel(d.nom, 'dom', d.col, ''), off:new THREE.Vector3(0, -26 * PS, 0), d, always:true});
+
+  const mine = K.filter(k => k.d === d.id), n = mine.length;
+  labels[labels.length - 1].el.querySelector('small').textContent = n + ' nœuds';
+  const out = d.pos.clone().normalize();
+  /* étoiles secondaires */
+  const outH = new THREE.Vector3(out.x, 0, out.z).normalize(), UPV = new THREE.Vector3(0, 1, 0);
+  const subs = (O.sous_domaines || []).filter(s => s.d === d.id && mine.some(k => k.s === s.id));
+  d.subs = subs.map((s, si) => {
+    const ns = subs.length, ang = ns > 1 ? (si / (ns - 1) - .5) * Math.min(1.1, .4 * (ns - 1)) : 0, vy = ns > 1 ? (si / (ns - 1) - .5) * Math.min(340, 110 * (ns - 1)) * (d.pos.y > 0 ? -1 : 1) : 0;
+    const sp = outH.clone().applyAxisAngle(UPV, ang).multiplyScalar(170).add(new THREE.Vector3(0, vy, 0));
+    const sg = new THREE.Group(); sg.position.copy(sp); g.add(sg);
+    const S = {...s, d, g:sg, pos:d.pos.clone().add(sp)};
+    const core = new THREE.Mesh(new THREE.SphereGeometry(4.6, 24, 24), new THREE.MeshBasicMaterial({color:C3(d.col, 2).lerp(new THREE.Color(2.2, 2.2, 2.2), .35), transparent:true}));
+    core.userData = {type:'sub', s:S, d}; sg.add(core); picks.push(core);
+    sg.add(glow(d.col, 70, .75, 1.6));
+    { const s2 = new THREE.Sprite(new THREE.SpriteMaterial({map:ST, color:C3(d.col, 2), opacity:.7, ...ADD})); s2.scale.setScalar(46); sg.add(s2); }
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({map:RT, color:C3(d.col, 1.8), opacity:.5, ...ADD})); halo.scale.setScalar(22); sg.add(halo); S.halo = halo;
+    const sc = new THREE.QuadraticBezierCurve3(new THREE.Vector3(), sp.clone().multiplyScalar(.5).add(new THREE.Vector3(0, 22, 0)), sp);
+    g.add(tube(sc, .5, d.col, {k:1.4, op:.65, sp:.3, gap:60, body:.3, head:1.8}));
+    labels.push({obj:sg, el:mkLabel(s.nom, 'sub', d.col), off:new THREE.Vector3(0, -14, 0), d, sub:S});
+    return S;
+  });
+  const subBy = Object.fromEntries(d.subs.map(s => [s.id, s])), idx = {};
+  mine.forEach((k) => {
+    const S = subBy[k.s], key = S ? S.id : '_', j = idx[key] = (idx[key] ?? -1) + 1;
+    const nn = S ? mine.filter(x => x.s === k.s).length : mine.filter(x => !subBy[x.s]).length;
+    const host = S ? S.g : g, hostPos = S ? S.pos : d.pos, bias = S ? S.pos.clone().sub(d.pos).normalize() : out;
+    const y = 1 - 2 * (j + .5) / Math.max(nn, 1), rr = Math.sqrt(Math.max(0, 1 - y * y)), th = j * 2.39996;
+    const dir = new THREE.Vector3(Math.cos(th) * rr, y, Math.sin(th) * rr).add(bias.clone().multiplyScalar(S ? .7 : 1.1)).normalize();
+    const dist = (k.st === 'interet' ? 80 + (j % 3) * 12 : k.st === 'en_cours' ? 64 : 52 + (j % 2) * 13) * (S ? .78 + Math.min(.4, nn * .035) : 1);
+    const p = dir.multiplyScalar(dist);
+    const ig = new THREE.Group(); ig.position.copy(p); host.add(ig);
+    let size = 3, gs = 18, gop = .5, kk = 1.2;
+    if (k.st === 'maitrise') { size = 4.6; gs = 34; gop = .9; kk = 2.4; }
+    if (k.st === 'acquis') { size = 3.6; gs = 22; gop = .6; kk = 1.6; }
+    if (k.st === 'interet') { size = 2; gs = 12; gop = .35; kk = .9; }
+    const ec = k.st === 'en_cours';
+    const mc = ec ? C3(GOLDHEX, 3.2) : k.st === 'maitrise' ? C3(d.col, kk).lerp(new THREE.Color(kk, kk, kk), .45) : C3(d.col, kk);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(ec ? 4.4 : size, 24, 24), new THREE.MeshBasicMaterial({color:mc, transparent:true, opacity:k.st === 'interet' ? .6 : 1}));
+    mesh.userData = {type:'item', k, d}; ig.add(mesh); picks.push(mesh);
+    const gl = glow(ec ? GOLDHEX : d.col, ec ? 44 : gs, ec ? .9 : gop, ec ? 1.6 : 1); ig.add(gl);
+    const lm = lineMat(ec ? GOLDHEX : d.col, {maitrise:.85, acquis:.6, en_cours:.9, interet:.15}[k.st], ec ? 2 : k.st === 'interet' ? 1.2 : 1.6);
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), p]), lm); host.add(l);
+    const it = {k, d, S, ig, l, mesh, gl, appear:0, show:1, hov:0, wpos:hostPos.clone().add(p)};
+    items.push(it);
+    if (!ec) { [mesh.material, gl.material, lm].forEach(m => m.userData.cf = 1); if (k.st !== 'interet') lm.userData.cfk = .55; }
+    else {
+      const t1 = new THREE.Mesh(new THREE.TorusGeometry(9, .45, 8, 64), new THREE.MeshBasicMaterial({color:C3(GOLDHEX, 2.4), opacity:.95, ...ADD}));
+      const t2 = new THREE.Mesh(new THREE.TorusGeometry(12.5, .25, 8, 64), new THREE.MeshBasicMaterial({color:C3(GOLDHEX, 1.8), opacity:.5, ...ADD}));
+      const halo = glow(GOLDHEX, 120, .3, 1.2);
+      const sw = new THREE.Sprite(new THREE.SpriteMaterial({map:RT, color:C3(GOLDHEX, 2.2), opacity:0, ...ADD})); sw.material.userData.anim = 1;
+      ig.add(t1, t2, halo, sw); ringsCours.push({t1, t2, gl, halo, sw, it});
+      const wp = it.wpos.clone(), bc = new THREE.QuadraticBezierCurve3(new THREE.Vector3(), wp.clone().multiplyScalar(.5).add(new THREE.Vector3(0, 120, 0)), wp);
+      const bm = tube(bc, 1.15, GOLDHEX, {k:2.3, op:.9, sp:.45, gap:70, body:.28, head:3.2}); world.add(bm); beams.push({m:bm, d, it});
+    }
+    labels.push({obj:ig, el:mkLabel(k.t, ec ? 'cours' : ''), off:new THREE.Vector3(0, -(size + 10), 0), d, it, always:false});
+  });
+});
+
+/* toile : compétences hors des grands centres d'intérêt, sur un cercle extérieur */
+const WEBD = {id:'toile', nom:'Toile — hors centres d’intérêt', col:'#cfd8ff', subs:[]};
+{
+  const W = O.connaissances.map((k, i) => ({...k, i, st: STAT(k)})).filter(k => k.d === 'toile');
+  const RW = 1150, n = W.length, webPts = [], webMat = lineMat('#8fa6ff', .1, 1);
+  W.forEach((k, j) => {
+    const t = (j + .5) / Math.max(n, 1) * Math.PI * 2 + .13, r = RW * (.9 + (j % 3) * .1);
+    const p = new THREE.Vector3(Math.cos(t) * r, Math.sin(t * 3) * 50 + (j % 2 ? 70 : -70), Math.sin(t) * r);
+    const ig = new THREE.Group(); ig.position.copy(p); world.add(ig);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(4.2, 20, 20), new THREE.MeshBasicMaterial({color:C3(WEBD.col, 2), transparent:true}));
+    mesh.userData = {type:'item', k, d:WEBD}; ig.add(mesh); picks.push(mesh);
+    const gl = glow(WEBD.col, 34, .75, 1.4); ig.add(gl);
+    let best = doms[0]; doms.forEach(dd => { if (dd.pos.distanceTo(p) < best.pos.distanceTo(p)) best = dd; });
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, best.pos]), lineMat(WEBD.col, .16, 1)); world.add(l);
+    const it = {k, d:WEBD, S:null, ig, l, mesh, gl, appear:0, show:1, hov:0, wpos:p.clone()};
+    items.push(it); K.push(k); webPts.push(p);
+    labels.push({obj:ig, el:mkLabel(k.t, ''), off:new THREE.Vector3(0, -14, 0), d:WEBD, it, always:false});
+  });
+}
+
+/* liens transverses */
+const itemBy = Object.fromEntries(items.map(it => [it.k.t, it]));
+const links = (O.liens || []).map(Ln => {
+  const a = itemBy[Ln.a], b = itemBy[Ln.b]; if (!a || !b) return null;
+  const pa = a.wpos.clone(), pb = b.wpos.clone(), same = a.d === b.d;
+  const ctrl = pa.clone().add(pb).multiplyScalar(same ? .62 : .28).add(new THREE.Vector3(0, same ? 25 : 60, 0));
+  const curve = new THREE.QuadraticBezierCurve3(pa, ctrl, pb);
+  const gold = a.k.st === 'en_cours' || b.k.st === 'en_cours';
+  const col = gold ? GOLDHEX : new THREE.Color(a.d.col).lerp(new THREE.Color(b.d.col), .5);
+  const strong = !gold && /maitrise|acquis/.test(a.k.st) && /maitrise|acquis/.test(b.k.st), base = gold ? .85 : strong ? .75 : .35;
+  const mesh = tube(curve, gold ? .55 : strong ? .4 : .28, col, {k:gold ? 1.9 : strong ? 1.5 : 1, op:base, sp:gold ? .4 : .22, gap:55, body:gold ? .4 : .32, head:gold ? 2.6 : 1.4});
+  world.add(mesh);
+  return {a, b, r:Ln.r, mesh, base, gold, strong};
+}).filter(Boolean);
+const NB = new Map();
+links.forEach(Ln => [[Ln.a, Ln.b], [Ln.b, Ln.a]].forEach(([x, y]) => { if (!NB.has(x.k)) NB.set(x.k, []); NB.get(x.k).push({it:y, r:Ln.r}); }));
+
+function mkLabel(t, cls, col, sub) {
+  const e = document.createElement('div'); e.className = 'lab ' + cls;
+  e.textContent = t.length > 38 ? t.slice(0, 37) + '…' : t;
+  if (sub !== undefined) e.appendChild(document.createElement('small'));
+  if (col) { e.style.color = col; e.style.textShadow = `0 0 12px ${col}88,0 0 6px #000,0 0 14px #000`; }
+  $('labels').appendChild(e); return e;
+}
+
+/* ================= post-traitement : bloom + étalonnage ================= */
+const VQ = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
+const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); quad.frustumCulled = false;
+const quadScene = new THREE.Scene(); quadScene.add(quad);
+const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const PM = (u, fs) => new THREE.ShaderMaterial({uniforms:u, vertexShader:VQ, fragmentShader:fs, depthTest:false, depthWrite:false});
+const matBright = PM({tD:{value:null}, uTh:{value:.8}}, `uniform sampler2D tD; uniform float uTh; varying vec2 vUv;
+  void main(){ vec3 c=clamp(texture2D(tD,vUv).rgb,0.0,30.0); float l=max(max(c.r,c.g),c.b); gl_FragColor=vec4(c*smoothstep(uTh,uTh+0.7,l),1.0); }`);
+const matBlur = PM({tD:{value:null}, uDir:{value:new THREE.Vector2()}}, `uniform sampler2D tD; uniform vec2 uDir; varying vec2 vUv;
+  void main(){ vec3 c=texture2D(tD,vUv).rgb*0.2270270270;
+    c+=texture2D(tD,vUv+uDir*1.3846153846).rgb*0.3162162162; c+=texture2D(tD,vUv-uDir*1.3846153846).rgb*0.3162162162;
+    c+=texture2D(tD,vUv+uDir*3.2307692308).rgb*0.0702702703; c+=texture2D(tD,vUv-uDir*3.2307692308).rgb*0.0702702703;
+    gl_FragColor=vec4(c,1.0); }`);
+const matComp = PM({tS:{value:null}, tB0:{value:null}, tB1:{value:null}, tB2:{value:null}, tB3:{value:null}, tB4:{value:null}, uBloom:{value:.95}, uHi:{value:1}, uT:UT, uRes:{value:new THREE.Vector2()}, uFade:{value:0}},
+  `uniform sampler2D tS,tB0,tB1,tB2,tB3,tB4; uniform float uBloom,uT,uFade,uHi; uniform vec2 uRes; varying vec2 vUv;
+  vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }
+  float hash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+  void main(){
+    vec2 cc=vUv-0.5; float r2=dot(cc,cc); vec2 off=cc*r2*0.018*uHi;
+    vec3 s=vec3(texture2D(tS,vUv+off).r,texture2D(tS,vUv).g,texture2D(tS,vUv-off).b);
+    vec3 b=texture2D(tB0,vUv).rgb*0.9+texture2D(tB1,vUv).rgb*0.95+texture2D(tB2,vUv).rgb*0.85+(texture2D(tB3,vUv).rgb*0.75+texture2D(tB4,vUv).rgb*0.7)*uHi;
+    vec3 c=aces(clamp(s+b*uBloom,0.0,60.0)*1.05);
+    float l=dot(c,vec3(0.299,0.587,0.114)); c=mix(vec3(l),c,1.12);
+    c*=mix(0.5,1.0,smoothstep(0.62,0.12,r2*1.5));
+    c+=(hash(vUv*uRes+fract(uT)*91.7)-0.5)*0.022;
+    gl_FragColor=vec4(c*uFade,1.0); }`);
+let rtS, rtB, A = [], B = [];
+function makeRTs() {
+  [rtS, rtB, ...A, ...B].forEach(r => r && r.dispose());
+  const w = Math.floor(innerWidth * PR), h = Math.floor(innerHeight * PR);
+  const o = {type:GL2 ? THREE.HalfFloatType : THREE.UnsignedByteType, minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter, depthBuffer:false};
+  rtS = new THREE.WebGLRenderTarget(w, h, {...o, depthBuffer:true, samples:GL2 && !LITE ? 4 : 0});
+  rtB = new THREE.WebGLRenderTarget(w >> (LITE ? 2 : 1), h >> (LITE ? 2 : 1), o);
+  A = []; B = [];
+  for (let i = 0; i < 5; i++) { const s = 1 << (i + (LITE ? 2 : 1)); A.push(new THREE.WebGLRenderTarget(Math.max(1, w / s | 0), Math.max(1, h / s | 0), o)); B.push(new THREE.WebGLRenderTarget(Math.max(1, w / s | 0), Math.max(1, h / s | 0), o)); }
+  matComp.uniforms.uRes.value.set(w, h);
+}
+function applyLite() {
+  PR = HDPR(); UPR.value = PR;
+  renderer.setPixelRatio(PR); renderer.setSize(innerWidth, innerHeight);
+  LOD.forEach(([g, full, lite]) => g.setDrawRange(0, LITE ? lite : full));
+  matComp.uniforms.uHi.value = LITE ? 0 : 1; $('scan').style.display = LITE ? 'none' : ''; document.body.classList.toggle('lite', LITE);
+  makeRTs();
+}
+function toggleLite() { LITE = !LITE; try { localStorage.setItem('orion-lite', LITE ? '1' : '0'); } catch (e) {} applyLite(); chips(); }
+applyLite();
+function pass(mat, target) { quad.material = mat; renderer.setRenderTarget(target); renderer.render(quadScene, quadCam); }
+function renderFrame() {
+  if (LITE) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(rtS); renderer.render(scene, camera);
+  matBright.uniforms.tD.value = rtS.texture; pass(matBright, rtB);
+  let src = rtB;
+  for (let i = 0; i < (LITE ? 3 : 5); i++) {
+    matBlur.uniforms.tD.value = src.texture; matBlur.uniforms.uDir.value.set(1 / A[i].width, 0); pass(matBlur, A[i]);
+    matBlur.uniforms.tD.value = A[i].texture; matBlur.uniforms.uDir.value.set(0, 1 / B[i].height); pass(matBlur, B[i]);
+    src = B[i];
+  }
+  const u = matComp.uniforms; u.tS.value = rtS.texture; u.tB0.value = B[0].texture; u.tB1.value = B[1].texture; u.tB2.value = B[2].texture; u.tB3.value = B[3].texture; u.tB4.value = B[4].texture;
+  pass(matComp, null);
+}
+
+/* ================= interaction ================= */
+const BASE = () => innerWidth < innerHeight * .9 ? Math.min(3300, 760 / Math.tan(Math.atan(Math.tan(26 * Math.PI / 180) * innerWidth / innerHeight))) : 1480;
+let rotY = 2.2, rotX = .45, tRotY = .6, tRotX = .45, dist = 3400, tDist = BASE(), dragging = false, moved = 0, lx = 0, ly = 0;
+let focus = null, filter = null, showAll = false, idle = 0, hovered = null, cf = true;
+const look = new THREE.Vector3(), tLook = new THREE.Vector3();
+const cv = renderer.domElement;
+const PTS = new Map(); let pinch0 = 0, pinchD = 0;
+cv.style.touchAction = 'none';
+cv.addEventListener('pointerdown', e => { PTS.set(e.pointerId, [e.clientX, e.clientY]); if (PTS.size === 2) { const [a, b] = [...PTS.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); pinchD = tDist; dragging = false; moved = 99; return; } });
+addEventListener('pointerup', e => PTS.delete(e.pointerId)); addEventListener('pointercancel', e => PTS.delete(e.pointerId));
+addEventListener('pointermove', e => { if (!PTS.has(e.pointerId)) return; PTS.set(e.pointerId, [e.clientX, e.clientY]); if (PTS.size === 2 && pinch0) { const [a, b] = [...PTS.values()]; tDist = Math.max(160, Math.min(3400, pinchD * pinch0 / Math.max(20, Math.hypot(a[0] - b[0], a[1] - b[1])))); idle = 0; } });
+cv.addEventListener('pointerdown', e => { if (PTS.size > 1) return; dragging = true; moved = 0; lx = e.clientX; ly = e.clientY; cv.classList.add('drag'); });
+addEventListener('pointerup', e => { if (dragging && moved < 5) clickAt(e); dragging = false; cv.classList.remove('drag'); });
+addEventListener('pointermove', e => {
+  if (dragging && PTS.size < 2) { const dx = e.clientX - lx, dy = e.clientY - ly; moved += Math.abs(dx) + Math.abs(dy); tRotY += dx * .005; tRotX = Math.max(-1.1, Math.min(1.1, tRotX + dy * .004)); lx = e.clientX; ly = e.clientY; idle = 0; }
+  hover(e);
+});
+cv.addEventListener('wheel', e => { tDist = Math.max(160, Math.min(3400, tDist * (1 + e.deltaY * .001))); idle = 0; }, {passive:true});
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); makeRTs(); });
+addEventListener('keydown', e => { if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; if (e.key === 'f') { cf = !cf; chips(); } if (e.key === 'r') replay(); if (e.key === 'l') toggleLite(); if (e.key === 'Escape') recenter(); });
+
+const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
+function pick(e) { mv.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(mv, camera); const h = ray.intersectObjects(picks.filter(p => p.visible), false); return h[0]?.object.userData; }
+function hover(e) { if (dragging || e.pointerType === 'touch') return; const u = pick(e); cv.style.cursor = u ? 'pointer' : ''; if (u !== hovered) { hovered = u; u ? showCard(u) : (!focus && hideCard()); } }
+function clickAt(e) { const u = pick(e); if (!u) { recenter(true); return; } setFocus(u); }
+function setFocus(u) { focus = u; track(u); showCard(u, true);
+  { const P = u.type === 'sub' ? u.s.pos : u.d.pos, th = Math.atan2(-P.x, P.z); let dd = th - tRotY; dd -= Math.round(dd / (2 * Math.PI)) * 2 * Math.PI; tRotY += dd; idle = 0; } tDist = u.type === 'dom' ? 520 : u.type === 'sub' ? 300 : 240; }
+function recenter(keepFilter) { focus = null; if (!keepFilter) filter = null; tDist = BASE(); tLook.set(0, 0, 0); hideCard(); chips(); }
+
+/* Ce que tu ouvres le plus : compté dans la base, lu par le bilan du soir pour savoir quoi approfondir */
+const VUES = {}; let vuesT = null;
+(async () => { try { const db = window.__orionDb; if (!db) return; const s = await db.doc('usage/vues').get(); if (s.exists) Object.assign(VUES, s.data().n || {}); } catch (e) {} })();
+function track(u) {
+  const key = u.type === 'dom' ? 'domaine:' + u.d.nom : u.type === 'sub' ? 'groupe:' + u.s.nom : u.k ? u.k.t : null; if (!key) return;
+  VUES[key] = (VUES[key] || 0) + 1;
+  const db = window.__orionDb; if (!db) return;
+  clearTimeout(vuesT); vuesT = setTimeout(() => { db.doc('usage/vues').set({n: VUES, maj: new Date().toISOString()}).catch(() => {}); }, 1500);
+}
+function showCard(u) {
+  const c = $('card');
+  if (u.type === 'dom') {
+    const mine = K.filter(k => k.d === u.d.id), cnt = s => mine.filter(k => k.st === s).length;
+    c.innerHTML = `<div class="t" style="color:${u.d.col};text-shadow:0 0 14px ${u.d.col}88">${esc(u.d.nom)}</div><div class="m">${cnt('maitrise')} maîtrisé · ${cnt('acquis')} acquis · ${cnt('en_cours')} en cours · ${cnt('interet')} intérêts</div>` +
+      (u.d.subs.length ? `<div class="m" style="margin-top:10px;letter-spacing:.18em">ÉTOILES SECONDAIRES</div><ul>${u.d.subs.map(s => `<li>${esc(s.nom)} <span class="d">· ${mine.filter(k => k.s === s.id).length}</span></li>`).join('')}</ul>` : '');
+  } else if (u.type === 'sub') {
+    const its = items.filter(i => i.S === u.s);
+    c.innerHTML = `<div class="t" style="color:${u.d.col};text-shadow:0 0 14px ${u.d.col}88">${esc(u.s.nom)}</div><div class="m">${esc(u.d.nom)} · ${its.length} nœuds</div><ul>${its.map(i => `<li>${esc(i.k.t)} <span class="d">· ${STAT_TXT[i.k.st]}</span></li>`).join('')}</ul>`;
+  } else {
+    const k = u.k, vis = VIS.filter(v => v.domaine === k.d && (k.src === 'visionnages' || k.st === 'interet')).slice(-6);
+    c.innerHTML = `<div class="t">${esc(k.t)}<span class="badge b-${k.st}">${STAT_TXT[k.st]}</span></div>
+      <div class="m">${esc(u.d.nom)} · source : ${esc(k.src || '—')} · ${esc(fmt(k.date))}${VUES[k.t] ? ' · ouvert ' + VUES[k.t] + ' fois' : ''}</div>
+      ${k.resume ? `<div class="m" style="color:var(--txt);margin-top:10px;line-height:1.5;font-family:var(--sans);font-size:13px">${esc(k.resume)}</div>` : ''}
+      ${(NB.get(k) || []).length ? '<div class="m" style="margin-top:10px;color:var(--gold);letter-spacing:.18em">RELIÉ À</div><ul>' + NB.get(k).map(n => `<li>${esc(n.it.k.t)} <span class="d">· ${esc(n.r)}</span></li>`).join('') + '</ul>' : ''}
+      ${vis.length ? '<ul>' + vis.map(v => `<li>${esc(v.titre)} <span class="d">· ${esc(v.type)}</span></li>`).join('') + '</ul>' : ''}`;
+  }
+  c.classList.add('on');
+}
+function hideCard() { $('card').classList.remove('on'); }
+
+/* ================= HUD ================= */
+const cnt = s => K.filter(k => k.st === s).length;
+$('maj').textContent = 'CARTE DE TES CONNAISSANCES · MAJ ' + fmt(O.maj).toUpperCase();
+const STATS = [[cnt('maitrise') + cnt('acquis'), 'acquis', ''], [cnt('en_cours'), 'en cours', 'g'], [cnt('interet'), 'intérêts', ''], [links.length, 'liens', ''], [VIS.length, 'visionnages', '']];
+$('stats').innerHTML = STATS.map(([v, l, c], i) => `<div class="st ${c}"><b data-v="${v}" id="sv${i}">0</b>${l}</div>`).join('');
+function countUp() { const t0 = performance.now(); (function step() { const p = Math.min(1, (performance.now() - t0) / 1600), e = 1 - Math.pow(1 - p, 3); STATS.forEach((s, i) => $('sv' + i).textContent = Math.round(s[0] * e)); if (p < 1) requestAnimationFrame(step); })(); }
+
+const cours = items.filter(i => i.k.st === 'en_cours');
+const E = O.echecs || {}, ob = (O.objectifs || []).find(o => o.domaine === 'echecs'), pi = O.piano || {};
+const info = k => { const t = k.t, CO = O.course, ss = (CO && CO.sorties) || [];
+  if (/600/.test(t) && E.elo) return `${E.elo.rapide} / 600 en rapide`;
+  if (/piano|Einaudi/i.test(t) && pi.morceau_en_cours) return `${pi.morceau_en_cours.t} · ${pi.morceau_en_cours.progression}`;
+  if (/10 km/.test(t) && ss.length) { const x = ss[ss.length - 1]; return `dernière : ${String(x.km).replace('.', ',')} km le ${fmt(x.date)}`; }
+  return k.resume || ''; };
+$('now').textContent = 'En ce moment · ' + cours.length + ' sujets en cours';
+let L = `<div class="panel now"><h3>◎ En ce moment</h3>${cours.map((c, i) => `<div class="wk" data-i="${i}"><i></i><div>${esc(c.k.t)}<small>${esc(c.d.nom)}${info(c.k) ? ' · <b>' + esc(info(c.k)) + '</b>' : ''}</small></div></div>`).join('') || '<div class="d">Rien en cours.</div>'}</div>`;
+const bars = [];
+if (ob && E.elo) {
+  const cur = E.elo.rapide, pct = Math.max(0, Math.min(100, (cur - ob.depart) / (ob.cible - ob.depart) * 100));
+  const wk = Math.max(1, (new Date(ob.echeance) - new Date(O.maj)) / 6048e5), need = Math.ceil((ob.cible - cur) / wk);
+  L += `<div class="panel"><h3>Échecs · objectif</h3><div class="big">${cur}<small>/ ${ob.cible} rapide</small></div>
+    <div class="bar"><div id="pb1" style="width:0"></div></div><div class="row"><span>départ ${ob.depart}</span><span>${Math.round(pct)} %</span><span>${fmt(ob.echeance)}</span></div>
+    <div class="row" style="margin-top:6px"><span>rythme requis</span><span style="color:var(--txt)">+${need} / sem.</span></div></div>`;
+  bars.push(['pb1', pct]);
+}
+if (pi.morceau_en_cours) {
+  const pr = parseInt(String(pi.morceau_en_cours.progression).replace(/[^0-9]/g, ' ').trim()) || 0;
+  L += `<div class="panel"><h3>Piano · morceau en cours</h3><div style="font-size:15px;font-weight:500">${esc(pi.morceau_en_cours.t)}</div>
+    <div class="bar g"><div id="pb2" style="width:0"></div></div><div class="row"><span>depuis ${fmt(pi.morceau_en_cours.debut)}</span><span>${pr} %</span></div>
+    <div class="row" style="margin-top:6px"><span>séances</span><span style="color:var(--txt)">${(pi.seances || []).length}</span></div></div>`;
+  bars.push(['pb2', Math.max(2, pr)]);
+}
+const CO = O.course;
+if (CO) {
+  const S = CO.sorties || [], best = S.reduce((m, x) => Math.max(m, +x.km || 0), 0), pc = Math.min(100, best / 10 * 100), last = S[S.length - 1];
+  L += `<div class="panel"><h3>Course · objectif 10 km</h3><div class="big">${best ? best.toFixed(1).replace('.', ',') : '0'}<small>km · plus longue sortie</small></div>
+    <div class="bar"><div id="pb3" style="width:0;background:linear-gradient(90deg,#1fbf7a,#6ff0b0);box-shadow:0 0 12px #6ff0b0"></div></div>
+    <div class="row"><span>${S.length} sortie${S.length > 1 ? 's' : ''}</span><span>${last ? 'dernière ' + fmt(last.date) + (last.allure ? ' · ' + esc(last.allure) + '/km' : '') : 'dis « Orion : course… »'}</span></div></div>`;
+  bars.push(['pb3', Math.max(2, pc)]);
+}
+$('left').innerHTML = L;
+$('left').querySelectorAll('.wk').forEach(w => w.onclick = () => { const c = cours[+w.dataset.i]; setFocus({type:'item', k:c.k, d:c.d}); });
+
+const hm = (O.humeurs || []).slice(-1)[0], ev = (O.envies || []).slice(-5).reverse();
+let Rh = `<div class="panel"><h3>Humeur et envies</h3>${hm ? `<div class="mood">${esc(hm.t)}</div><div class="d" style="margin:4px 0 10px">${fmt(hm.date)}</div>` : ''}${ev.map(e => `<div class="env">${esc(e.t)}</div>`).join('') || '<div class="d">Dis à Claude « Orion : j’ai envie de… »</div>'}</div>`;
+Rh += `<div class="panel"><h3>Derniers visionnages</h3>${[...VIS.filter(v => v.statut === 'en cours'), ...VIS.filter(v => v.statut !== 'en cours').slice(-7).reverse()].map(v => `<div class="it"><span>${esc(v.titre)}</span><span class="tg" style="${v.statut === 'en cours' ? 'color:var(--gold)' : ''}">${esc(v.statut === 'en cours' ? 'en cours' : v.type)}</span></div>`).join('') || '<div class="d">Rien encore.</div>'}</div>`;
+Rh += `<div class="panel"><h3>Journal</h3>${(O.journal || []).slice(-5).reverse().map(j => `<div class="it"><span class="d">${fmt(j.date)}</span><span style="font-size:12.5px">${esc(j.texte)}</span></div>`).join('')}</div>`;
+$('right').innerHTML = Rh;
+if (MOBILE || innerWidth <= 760) {
+  document.body.classList.add('mob');
+  const st = document.createElement('div'); st.className = 'panel mstats'; st.innerHTML = $('stats').innerHTML.replace(/id="sv/g, 'id="m_sv'); $('left').prepend(st);
+  [...$('right').children].forEach(c => $('left').appendChild(c));
+  const h = document.createElement('button'); h.id = 'grip'; h.setAttribute('aria-label', 'Afficher ou réduire le panneau'); h.innerHTML = '<span></span>';
+  $('left').prepend(h);
+  let min = false; try { min = localStorage.getItem('orion-sheet') === 'min'; } catch (e) {}
+  const setMin = v => { min = v; $('left').classList.toggle('min', v); try { localStorage.setItem('orion-sheet', v ? 'min' : 'open'); } catch (e) {} };
+  setMin(min); h.onclick = () => setMin(!min);
+  STATS.forEach((s, i) => { const el = document.getElementById('m_sv' + i); if (el) el.textContent = s[0]; });
+}
+{
+  let FOLD = {}; try { FOLD = JSON.parse(localStorage.getItem('orion-fold') || '{}'); } catch (e) {}
+  document.querySelectorAll('#left .panel, #right .panel').forEach(p => {
+    const h = p.querySelector('h3'); if (!h) return;
+    const key = h.textContent.trim();
+    p.classList.add('fold'); if (FOLD[key]) p.classList.add('open');
+    const big = p.querySelector('.big'), n = p.querySelectorAll('.wk, .it, .env').length;
+    const sum = big ? big.textContent.replace(/\s+/g, ' ').trim() : (n ? String(n) : '');
+    const c = document.createElement('span'); c.className = 'chev'; c.textContent = '▸'; h.prepend(c);
+    if (sum) { const b = document.createElement('span'); b.className = 'fsum'; b.textContent = sum; h.appendChild(b); }
+    h.setAttribute('role', 'button'); h.tabIndex = 0; h.setAttribute('aria-expanded', p.classList.contains('open'));
+    const tog = () => { p.classList.toggle('open'); const o = p.classList.contains('open'); h.setAttribute('aria-expanded', o); FOLD[key] = o; try { localStorage.setItem('orion-fold', JSON.stringify(FOLD)); } catch (e) {} };
+    h.onclick = tog; h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } };
+  });
+}
+
+function chips() {
+  const b = $('bottom'); b.innerHTML = '';
+  const mk = (txt, on, fn, col, cls = '') => { const c = document.createElement('button'); c.className = 'chip ' + cls + (on ? ' on' : ''); c.innerHTML = (col ? `<i style="background:${col};box-shadow:0 0 8px ${col}"></i>` : '') + esc(txt); c.onclick = fn; b.appendChild(c); };
+  mk('◎ Focus en cours', cf, () => { cf = !cf; chips(); }, null, 'cf');
+  mk('Tout', !filter, () => { filter = null; chips(); });
+  doms.forEach(d => mk(d.nom, filter === d.id, () => { filter = filter === d.id ? null : d.id; chips(); if (filter) setFocus({type:'dom', d}); }, d.col));
+  mk(showAll ? 'Masquer les noms' : 'Tous les noms', false, () => { showAll = !showAll; chips(); }, null, 'act');
+  mk('▶ Rejouer', false, replay, null, 'act');
+  mk('Recentrer', false, () => recenter(), null, 'act');
+  mk(LITE ? '⚡ Mode léger : activé' : '⚡ Mode léger', LITE, toggleLite, null, 'act');
+}
+chips();
+
+function replay() {
+  const order = [...items].sort((a, b) => (a.k.date || '').localeCompare(b.k.date || '') || a.k.i - b.k.i);
+  const t0 = performance.now();
+  order.forEach((it, i) => { it.appear = t0 + 300 + i * 160; it.show = 0; });
+  focus = null; tDist = BASE() * 1.08; tLook.set(0, 0, 0);
+}
+
+/* ================= intro ================= */
+const T0 = performance.now(), INTRO = 4600;
+items.forEach(it => { it.show = 0; it.appear = Infinity; });
+setTimeout(replay, 2200);
+setTimeout(() => $('intro').classList.add('out'), 2700);
+setTimeout(() => { document.body.classList.remove('pre'); countUp(); bars.forEach(([id, w]) => setTimeout(() => $(id) && ($(id).style.width = w + '%'), 400)); }, MOBILE ? 2400 : 3300);
+
+/* ================= boucle ================= */
+function fadeMat(m, f) {
+  if (!m || m.userData.anim) return;
+  const u = m.uniforms && m.uniforms.uOp;
+  if (m.userData.base === undefined) m.userData.base = u ? u.value : m.opacity;
+  const v = m.userData.base * f * (cf && m.userData.cf ? (m.userData.cfk || .18) : 1);
+  if (u) u.value = v; else m.opacity = v;
+}
+const tmp = new THREE.Vector3(), clock = new THREE.Clock(), qInv = new THREE.Quaternion();
+function animate() {
+  requestAnimationFrame(animate);
+  if (window.__orionPaused) return;
+  const t = clock.getElapsedTime(), now = performance.now(); UT.value = t;
+  idle++;
+  const ip = Math.min(1, (now - T0) / INTRO), ie = 1 - Math.pow(1 - ip, 4);
+  if (ip < 1) {
+    dist = 3400 + (BASE() - 3400) * ie; rotY = 2.6 + (.6 - 2.6) * ie; tRotY = rotY; rotX = -.05 + .5 * ie; tRotX = rotX;
+    camera.fov = 78 - 26 * ie; camera.updateProjectionMatrix();
+    matComp.uniforms.uFade.value = Math.min(1, (now - T0) / 1400);
+  } else {
+    if (camera.fov !== 52) { camera.fov = 52; camera.updateProjectionMatrix(); }
+    matComp.uniforms.uFade.value = 1;
+    if (!dragging && !focus && idle > 120) tRotY += .0008;
+    rotY += (tRotY - rotY) * .07; rotX += (tRotX - rotX) * .07; dist += (tDist - dist) * .06;
+  }
+  world.rotation.set(rotX, rotY, 0);
+  if (focus) { (focus.type === 'dom' ? focus.d.g : focus.type === 'sub' ? focus.s.g : items.find(i => i.k === focus.k)?.ig)?.getWorldPosition(tLook); }
+  look.lerp(tLook, .06);
+  if (document.body.classList.contains('mob')) { const Hh = innerHeight, off = $('left').classList.contains('min') ? Hh * .06 : Hh * .16; camera.setViewOffset(innerWidth, Hh, 0, off, innerWidth, Hh); } else if (camera.view) { camera.clearViewOffset(); }
+  camera.position.set(look.x, look.y + dist * .22, look.z + dist);
+  camera.lookAt(look);
+
+  /* noyau */
+  qInv.copy(world.quaternion).invert().multiply(camera.quaternion); corona.quaternion.copy(qInv);
+  ico.rotation.y = t * .15; ico.rotation.x = t * .07; shell.rotation.y = -t * .05;
+  rings.forEach((r, i) => r.rotation.z = t * (.12 + i * .05) * (i % 2 ? -1 : 1));
+  const pulse = 1 + Math.sin(t * 1.6) * .05; coreMesh.scale.setScalar(pulse); corona.scale.set(290 * (1 + Math.sin(t * .9) * .06), 290 * (1 + Math.sin(t * .9) * .06), 1);
+  const wp = (t / 6.5) % 1; waveMat.uniforms.uP.value = wp;
+  galaxyMat.uniforms.uOp.value = filter ? .45 : cf ? .8 : 1;
+  BGP.forEach(b => { if (b.m) b.m.rotation.y = t * b.sp; if (b.piv) b.piv.rotation.y = t * b.sp; });
+
+  /* domaines */
+  doms.forEach(d => {
+    d.orb.rotation.y = t * .25; d.orb.rotation.x = t * .12; d.swirl.rotation.y = t * .18; { const tw = 1 + Math.sin(t * 2.3 + d.pos.x) * .08 + Math.sin(t * 5.1 + d.pos.z) * .04; d.spk.scale.setScalar(130 * PS * tw); d.spk.material.rotation = Math.sin(t * .3 + d.pos.y) * .12; } { const q = (t * .35 + d.pos.x * .01) % 1; d.pring.scale.setScalar((28 + q * 26) * PS); d.pring.material.opacity = .6 * (1 - q) * (filter && filter !== d.id ? .1 : 1); }
+    d.subs.forEach((S, si) => { const q = (t * .3 + si * .27) % 1; S.halo.scale.setScalar(16 + q * 22); S.halo.material.opacity = .55 * (1 - q) * (filter && filter !== d.id ? .1 : 1); });
+    const f = filter && filter !== d.id ? .1 : 1;
+    d.g.traverse(o => { if (o.material) fadeMat(o.material, f); });
+    fadeMat(d.link.material, f);
+  });
+  ringsCours.forEach((r, i) => {
+    r.t1.rotation.x = t * 1.2 + i; r.t1.rotation.y = t * .8; r.t2.rotation.y = -t * .9; r.t2.rotation.z = t * .5 + i;
+    const p = 1 + Math.sin(t * 3 + i) * .18, g0 = cf ? 62 : 44; r.gl.scale.set(g0 * p, g0 * p, 1);
+    const hp = (cf ? 160 : 100) * (1 + Math.sin(t * 1.3 + i) * .12); r.halo.scale.set(hp, hp, 1);
+    const ph = (t * .42 + i * .19) % 1, dim = filter && filter !== r.it.d.id ? .1 : 1;
+    r.sw.scale.setScalar(12 + ph * 78); r.sw.material.opacity = Math.pow(1 - ph, 2) * .9 * dim * (r.it.ig.scale.x > .5 ? 1 : 0);
+  });
+  beams.forEach((b, i) => { b.m.visible = b.it.ig.scale.x > .5; b.m.material.uniforms.uOp.value = (filter && filter !== b.d.id) ? .05 : (cf ? 1 : .45) * (.85 + Math.sin(t * 2 + i) * .15); });
+  const hk = (hovered && hovered.k) || (focus && focus.k);
+  links.forEach(Ln => {
+    Ln.mesh.visible = Ln.a.ig.scale.x > .5 && Ln.b.ig.scale.x > .5;
+    const on = hk && (hk === Ln.a.k || hk === Ln.b.k), dimL = filter && filter !== Ln.a.d.id && filter !== Ln.b.d.id;
+    Ln.mesh.material.uniforms.uOp.value = dimL ? .03 : on ? 1.8 : Ln.gold ? Ln.base * (.85 + Math.sin(t * 2) * .15) : Ln.base * (cf ? (Ln.strong ? .8 : .4) : 1);
+  });
+  items.forEach(it => {
+    if (!it.show && now > it.appear) it.show = .001;
+    if (it.show && it.show < 1) it.show = Math.min(1, it.show + .05);
+    const isH = hovered && hovered.k === it.k; it.hov += ((isH ? 1 : 0) - it.hov) * .15;
+    const s = it.show ? (it.show < 1 ? it.show * (1.5 - .5 * it.show) : 1) : 0;
+    it.ig.scale.setScalar((s || .0001) * (1 + it.hov * .7)); it.l.visible = s > .5;
+  });
+
+  /* étiquettes */
+  const W = innerWidth, H = innerHeight;
+  labels.forEach(lb => {
+    lb.obj.getWorldPosition(tmp); tmp.add(lb.off);
+    const camD = tmp.distanceTo(camera.position); tmp.project(camera);
+    const dim = filter && lb.d.id !== filter;
+    const isHover = hovered && hovered.k && lb.it && hovered.k === lb.it.k;
+    const domOn = (focus && focus.type === 'dom' && focus.d === lb.d) || (hovered && hovered.type === 'dom' && hovered.d === lb.d);
+    const subOf = lb.sub || (lb.it && lb.it.S);
+    const subOn = subOf && ((focus && focus.type === 'sub' && focus.s === subOf) || (hovered && hovered.type === 'sub' && hovered.s === subOf) || (hk && items.some(i => i.k === hk && i.S === subOf)));
+    const isFocusDom = lb.sub ? (domOn || subOn || camD < 620) : lb.it ? (lb.it.S ? subOn : domOn) : false;
+    const vis = ip > .55 && tmp.z < 1 && !dim && (lb.always || showAll || isHover || isFocusDom || (focus && focus.k === lb.it?.k) || (hk && lb.it && (NB.get(hk) || []).some(n => n.it === lb.it))) && (!lb.it || lb.it.ig.scale.x > .5);
+    if (!vis) { lb.el.style.opacity = 0; return; }
+    lb.el.style.left = ((tmp.x + 1) / 2 * W) + 'px'; lb.el.style.top = ((1 - tmp.y) / 2 * H) + 'px';
+    lb.el.style.opacity = lb.sub ? Math.max(.55, Math.min(1, 900 / camD)) : (cf && lb.it && lb.it.k.st === 'en_cours') || !lb.it ? 1 : Math.max(.25, Math.min(1, 2000 / camD - .3));
+  });
+  renderFrame();
+}
+window.__orionMap = { focus: t => { const it = items.find(i => i.k.t === t); if (!it) return false; setFocus({type:'item', k:it.k, d:it.d}); return true; }, recenter: () => recenter() };
+animate();
+}
+/* Données : la version la plus récente entre celle intégrée à la page et celle écrite par le bilan du soir dans la base */
+(async () => {
+  let O = window.ORION, db = null;
+  const tick = ms => new Promise(r => setTimeout(() => r(null), ms));
+  if (window.ORION_MODE === 'pwa') {
+    try { const t = localStorage.getItem('orion-data'); O = t ? JSON.parse(t) : null; } catch (e) { O = null; }
+    if (!O || !Array.isArray(O.connaissances)) { window.orionWelcome(); return; }
+  }
+  try {
+    if (window.ORION_MODE !== 'pwa' && window.claude && window.claude.use) {
+      db = await Promise.race([window.claude.use('db'), tick(2500)]);
+      if (db) {
+        window.__orionDb = db;
+        const s = await Promise.race([db.doc('orion/current').get(), tick(2500)]);
+        const d = s && s.exists ? s.data() : null;
+        const D = d && (typeof d.json === 'string' ? JSON.parse(d.json) : d.data);
+        if (D && Array.isArray(D.connaissances) && String(D.maj || '') >= String(O.maj || '')) O = D;
+      }
+    }
+  } catch (e) {}
+  /* saisies faites dans l'appli, rejouées sur la base */
+  try { await window.OrionStore.load(db, tick); window.OrionStore.ops.forEach(op => { try { window.orionApply(O, op); } catch (e) {} }); } catch (e) {}
+  window.__orionData = O;
+  if (window.THREE) { try { __boot(O); } catch (e) { console.error(e); } }
+  else { document.body.classList.remove('pre'); const m = document.createElement('div'); m.className = 'hud panel'; m.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%);max-width:340px;text-align:center;font-size:13px;line-height:1.6'; m.innerHTML = 'La carte 3D n’a pas pu se charger (connexion ?).<br><span style="color:var(--mut)">Les autres onglets fonctionnent normalement.</span>'; document.body.appendChild(m); const i = document.getElementById('intro'); if (i) i.remove(); }
+  try { window.__orionApp(O); } catch (e) { console.error(e); }
+})();
+</script>
+
+
+
+</body>
+</html>
