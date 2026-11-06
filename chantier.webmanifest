@@ -3,7 +3,7 @@
   "short_name": "Aequo",
   "description": "Suivi de chantier tous corps d'état : lots, planning, CR, réserves, automatisations Outlook.",
   "lang": "fr",
-  "id": "chantier.html",
+  "id": "aequo",
   "start_url": "chantier.html",
   "scope": "chantier",
   "display": "standalone",
